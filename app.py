@@ -3,6 +3,7 @@ import os
 import asyncio
 import random
 import math
+import datetime
 from copy import deepcopy
 import json
 import discord
@@ -11,7 +12,7 @@ from discord.ext import commands, tasks
 client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
-@tasks.loop(time=[datetime.time(hour=12, tzinfo=utc)])
+@tasks.loop(time=[datetime.time(hour=12, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     # with open("./bot_status.txt", "r") as file:
     #     randomresponses = file.readlines()
