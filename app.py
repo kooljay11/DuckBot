@@ -117,6 +117,27 @@ async def get_max_quacks(users):
     return top_user_id
 
 
+@client.tree.command(name="quackinfo", description="Check out the quack info of a user.")
+async def quack_info(interaction: discord.Interaction, user_id: int = 0):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    if user_id == 0:
+        user_id = interaction.user.id
+
+    try:
+        message = f'{client.get_user(user_id)}'
+        if user_info[str(user_id)]["quackRank"] != "":
+            message += f' the {user_info[str(user_id)]["quackRank"]}'
+
+        message += f' has quacked {user_info[str(user_id)]["quacks"]} times and is on a {user_info[str(user_id)]["quacks"]} day streak.'
+
+    except:
+        message = 'That user has not quacked yet.'
+
+    await interaction.response.send_message(message)
+
+
 async def main():
     async with client:
         with open("config.json", "r") as file:
