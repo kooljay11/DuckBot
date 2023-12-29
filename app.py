@@ -57,15 +57,16 @@ async def quack(interaction: discord.Interaction):
             user_info[user]["quacks"] += 1
             user_info[user]["quackStreak"] += 1
             # print(f'{user} quacked loudly.')
-            message = f'{user} quacked loudly.'
+            message = f'User {user} quacked loudly.'
 
             if user_info[user]["quackStreak"] >= global_info["maxQuackStreakLength"]:
                 user_info[user]["quackStreak"] -= global_info["maxQuackStreakLength"]
                 user_info[user]["quacks"] += global_info["quackStreakReward"]
                 # print(f'{user} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.')
-                message += f'\n{user} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
+                message += f'\nUser {user} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
         else:
-            print(f'{user} tried to quack but your throat is too sore today.')
+            print(
+                f'User {user} tried to quack but your throat is too sore today.')
     except:
         new_user = {
             "quacks": 1,
@@ -73,13 +74,47 @@ async def quack(interaction: discord.Interaction):
             "quackedToday": True
         }
         user_info[user] = new_user
-        print(f'{user} quacked for the first time!')
+        print(f'User {user} quacked for the first time!')
 
     # Save to database
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message("Command executed")
+
+
+@client.tree.command(name="quackery", description="Check out who are the top quackers.")
+async def quackery(interaction: discord.Interaction, number: int = 10):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    top_list = "Top Quackers"
+
+    for x in range(number):
+        user_id = await get_max_quacks(user_info)
+        print(f'user_id: {user_id}')
+
+        if user_id == 0:
+            break
+
+        top_list += f'\n{client.get_user(user_id)} --- {user_info[str(user_id)]["quacks"]}'
+        user_info.pop(str(user_id))
+
+    await interaction.response.send_message(top_list)
+
+
+# Return user id of the user with the most quacks
+async def get_max_quacks(users):
+    quacks = 0
+    top_user_id = 0
+
+    # Find the userId with the max quacks
+    for userId, user in users.items():
+        if int(user["quacks"]) > quacks:
+            quacks = int(user["quacks"])
+            top_user_id = int(userId)
+
+    return top_user_id
 
 
 async def main():
