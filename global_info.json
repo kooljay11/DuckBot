@@ -1,4 +1,19 @@
 {
+    "new_day_channel_id": 1071097907903742062,
     "maxQuackStreakLength": 7,
-    "quackStreakReward": 1
+    "quackStreakReward": 1,
+    "quackRank": {
+        "Duckling": 10,
+        "Duckster": 30,
+        "Duck Chief": 60,
+        "Duck Baron": 100,
+        "Duck Earl": 150,
+        "Duck Duke": 210,
+        "Duck Monarch": 280,
+        "Duck Imperator": 365,
+        "Duck Prophet": 547,
+        "Lord of the Ducks": 912,
+        "Duck Diety": 1460,
+        "Duck Singularity": 3650
+    }
 }
