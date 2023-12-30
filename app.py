@@ -13,8 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-# @tasks.loop(time=[datetime.time(hour=12, tzinfo=datetime.timezone.utc)])
-@tasks.loop(time=[datetime.time(hour=12, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+# @tasks.loop(time=[datetime.time(hour=19, minute=40, tzinfo=datetime.timezone.utc)])
 # @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
@@ -54,11 +54,26 @@ async def dailyReset():
         print('Error trying to execute the new day.')
 
 
+# @tasks.loop(time=[datetime.time(hour=21, minute=0, tzinfo=datetime.timezone.utc)])
+# async def testDaily():
+#     # Tell the specified channel about the update
+#     try:
+#         with open("./global_info.json", "r") as file:
+#             global_info = json.load(file)
+
+#         destination_channel = int(global_info["new_day_channel_id"])
+#         await client.get_channel(destination_channel).send(
+#             "[Testing] New day successful.")
+#     except:
+#         print('[Testing] New day not successful.')
+
+
 @client.event
 async def on_ready():
     await client.tree.sync()
     print("Bot is connected to Discord")
     dailyReset.start()
+    testDaily.start()
 
 
 @client.tree.command(name="quack", description="Get your quack in for today.")
