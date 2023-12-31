@@ -52,12 +52,12 @@ async def dailyReset():
     except:
         print('Error trying to execute the new day.')
 
+
 @client.event
 async def on_ready():
     await client.tree.sync()
     print("Bot is connected to Discord")
     dailyReset.start()
-    testDaily.start()
 
 
 @client.tree.command(name="quack", description="Get your quack in for today.")
@@ -103,13 +103,13 @@ async def quack(interaction: discord.Interaction):
     await interaction.response.send_message(message)
 
 
-
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
 async def quackery(interaction: discord.Interaction):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
-    embed = discord.Embed(title="Top Quackers", description="", color=discord.Color.blue())
+    embed = discord.Embed(title="Top Quackers",
+                          description="", color=discord.Color.blue())
 
     # Limiting the number of quackers to 10.
     number_of_quackers_to_show = 10
@@ -129,7 +129,8 @@ async def quackery(interaction: discord.Interaction):
         avatar_url = user.avatar.url if user.avatar else None
 
         # Add user's information to the embed
-        embed.add_field(name=user_name, value=f"Quacks: {user_info[str(user_id)]['quacks']}", inline=False)
+        embed.add_field(
+            name=user_name, value=f"Quacks: {user_info[str(user_id)]['quacks']}", inline=False)
 
         # Optionally add user's avatar as thumbnail
         if avatar_url:
@@ -140,6 +141,8 @@ async def quackery(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 # Return user id of the user with the most quacks
+
+
 async def get_max_quacks(users):
     quacks = 0
     top_user_id = 0
