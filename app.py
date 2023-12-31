@@ -14,7 +14,6 @@ client = commands.Bot(command_prefix="/",
 
 
 @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-# @tasks.loop(time=[datetime.time(hour=19, minute=40, tzinfo=datetime.timezone.utc)])
 # @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
@@ -53,21 +52,6 @@ async def dailyReset():
     except:
         print('Error trying to execute the new day.')
 
-
-# @tasks.loop(time=[datetime.time(hour=21, minute=0, tzinfo=datetime.timezone.utc)])
-# async def testDaily():
-#     # Tell the specified channel about the update
-#     try:
-#         with open("./global_info.json", "r") as file:
-#             global_info = json.load(file)
-
-#         destination_channel = int(global_info["new_day_channel_id"])
-#         await client.get_channel(destination_channel).send(
-#             "[Testing] New day successful.")
-#     except:
-#         print('[Testing] New day not successful.')
-
-
 @client.event
 async def on_ready():
     await client.tree.sync()
@@ -86,7 +70,6 @@ async def quack(interaction: discord.Interaction):
 
     user_id = interaction.user.id
     username = client.get_user(user_id)
-    # print(f'{user} trying to quack')
 
     try:
         user = user_info[str(user_id)]
@@ -95,16 +78,13 @@ async def quack(interaction: discord.Interaction):
             user["quackedToday"] = True
             user["quacks"] += 1
             user["quackStreak"] += 1
-            # print(f'{user} quacked loudly.')
             message = f'{username} quacked loudly.'
 
             if user["quackStreak"] >= global_info["maxQuackStreakLength"]:
                 user["quackStreak"] -= global_info["maxQuackStreakLength"]
                 user["quacks"] += global_info["quackStreakReward"]
-                # print(f'{user} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.')
                 message += f'\n{username} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
         else:
-            # print(f'User {user} tried to quack but their throat is too sore today.')
             message = f'{username} tried to quack but their throat is too sore today.'
     except:
         new_user = {
@@ -115,7 +95,6 @@ async def quack(interaction: discord.Interaction):
         }
         user_info[user_id] = new_user
         message = f'{username} quacked for the first time!'
-        # print(f'User {user} quacked for the first time!')
 
     # Save to database
     with open("./user_info.json", "w") as file:
@@ -133,7 +112,6 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
 
     for x in range(number):
         user_id = await get_max_quacks(user_info)
-        # print(f'user_id: {user_id}')
 
         if user_id == 0:
             break
