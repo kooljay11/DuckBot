@@ -103,24 +103,41 @@ async def quack(interaction: discord.Interaction):
     await interaction.response.send_message(message)
 
 
+
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
-async def quackery(interaction: discord.Interaction, number: int = 10):
+async def quackery(interaction: discord.Interaction):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
-    top_list = "Top Quackers"
+    embed = discord.Embed(title="Top Quackers", description="", color=discord.Color.blue())
 
-    for x in range(number):
+    # Limiting the number of quackers to 10.
+    number_of_quackers_to_show = 10
+
+    for _ in range(number_of_quackers_to_show):
         user_id = await get_max_quacks(user_info)
 
         if user_id == 0:
             break
 
-        top_list += f'\n{client.get_user(user_id)} --- {user_info[str(user_id)]["quacks"]}'
+        user = client.get_user(user_id)
+        if user is None:
+            continue  # Skip if the user cannot be found
+
+        # Get user's display name and avatar URL
+        user_name = f'{user.name}#{user.discriminator}'
+        avatar_url = user.avatar.url if user.avatar else None
+
+        # Add user's information to the embed
+        embed.add_field(name=user_name, value=f"Quacks: {user_info[str(user_id)]['quacks']}", inline=False)
+
+        # Optionally add user's avatar as thumbnail
+        if avatar_url:
+            embed.set_thumbnail(url=avatar_url)
+
         user_info.pop(str(user_id))
 
-    await interaction.response.send_message(top_list)
-
+    await interaction.response.send_message(embed=embed)
 
 # Return user id of the user with the most quacks
 async def get_max_quacks(users):
