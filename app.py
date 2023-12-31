@@ -52,12 +52,12 @@ async def dailyReset():
     except:
         print('Error trying to execute the new day.')
 
+
 @client.event
 async def on_ready():
     await client.tree.sync()
     print("Bot is connected to Discord")
     dailyReset.start()
-    testDaily.start()
 
 
 @client.tree.command(name="quack", description="Get your quack in for today.")
