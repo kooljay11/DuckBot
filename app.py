@@ -32,7 +32,6 @@ async def dailyReset():
         user["quackedToday"] = False
 
         target_rank = await get_quack_rank(user["quacks"])
-        print(f'target_rank: {target_rank}')
 
         if target_rank != user["quackRank"]:
             user["quackRank"] = target_rank
