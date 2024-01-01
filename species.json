@@ -52,6 +52,7 @@
         "summer": {},
         "fall": {},
         "winter": {
+            "bonusIncomePerQuality": 0.33333334,
             "canAttack": true
         }
     },

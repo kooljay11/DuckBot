@@ -21,5 +21,16 @@
         15,
         25
     ],
-    "totalLands": 0
+    "landCounter": 1,
+    "qualityImprovementProbability": 0.2,
+    "qualityDecayProbability": 0.2,
+    "task_queue": [],
+    "day_counter": 4,
+    "current_season": "",
+    "seasons": {
+        "spring": 3,
+        "summer": 3,
+        "fall": 3,
+        "winter": 3
+    }
 }

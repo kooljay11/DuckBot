@@ -6,7 +6,7 @@
         "maxQuality": 20,
         "species": "",
         "buildings": [],
-        "castleLvl": 0,
-        "garrison": []
+        "garrison": [],
+        "seigeCamp": []
     }
 }

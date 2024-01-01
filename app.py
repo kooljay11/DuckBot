@@ -27,8 +27,8 @@ async def dailyReset():
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
-    # Reset streak counter if the streak is broken
     for userId, user in user_info.items():
+        # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
             user["quackStreak"] = 0
 
@@ -39,9 +39,25 @@ async def dailyReset():
         if target_rank != user["quackRank"]:
             user["quackRank"] = target_rank
 
+        # Collect the income from each land
+        for land_id in user["land_ids"]:
+            land = await get_land(land_id)
+
+            # Don't collect if the land is being sieged by a superior foe
+
+        # Attempt to pay all the soldiers in the party and garrisoned in each land
+
+        # If no money is left then disband all the soldiers that cant be paid
+
+    # Execute the task queue
+    # 1) Do attacks/lay siege
+    # 2) Build queued buildings
+    # 3) Hire/upgrade troops
+    # 4)
+
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
-        global_info["qqExchangeRateRange"][0]), int(global_info["qqExchangeRateRange"][0]))
+        global_info["qqExchangeRateRange"][0]), int(global_info["qqExchangeRateRange"][1]))
 
     # Save to database
     with open("./user_info.json", "w") as file:
@@ -97,7 +113,17 @@ async def quack(interaction: discord.Interaction):
             "quacks": 1,
             "quackStreak": 1,
             "quackedToday": True,
-            "quackRank": ""
+            "quackRank": "",
+            "spentQuacks": 0,
+            "quackerinos": 0,
+            "renown": 0,
+            "liege_id": 0,
+            "taxPerVassalLand": 0,
+            "homeland_id": -1,
+            "land_ids": [],
+            "mischief": false,
+            "species": "",
+            "party": []
         }
         user_info[user_id] = new_user
         message = f'{username} quacked for the first time!'
@@ -297,6 +323,94 @@ async def get_next_quack_rank(quack_rank):
             next_quack_rank = rank
 
     return next_quack_rank
+
+
+@client.tree.command(name="homeland", description="Establish a new homeland for you and your people.")
+async def establish_homeland(interaction: discord.Interaction, name: str, species: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    with open("./species.json", "r") as file:
+        species_list = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the species exists and is enabled
+    try:
+        if not bool(species_list[species]["enabled"]):
+            await interaction.response.send_message("This species is not enabled.")
+            return
+    except:
+        await interaction.response.send_message("Species not found.")
+        return
+
+    # Make sure this player hasn't made a homeland already
+    if user.get("homeland_id", -1) >= 0:
+        await interaction.response.send_message("You already have a homeland.")
+        return
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    # Create the new land
+    try:
+        new_land = deepcopy(lands["default"])
+        new_land["name"] = name
+        new_land["owner_id"] = user_id
+        new_land["species"] = species
+
+        lands[global_info["landCounter"]] = new_land
+
+        user["homeland_id"] = global_info["landCounter"]
+        user["species"] = species
+        user["land_ids"] = [global_info["landCounter"]]
+
+        global_info["landCounter"] += 1
+        message = 'New land created'
+
+        # Save to database
+        with open("./user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
+
+        # Save to database
+        with open("./global_info.json", "w") as file:
+            json.dump(global_info, file, indent=4)
+
+        # Save to database
+        with open("./lands.json", "w") as file:
+            json.dump(lands, file, indent=4)
+    except:
+        message = 'There was an error trying to add the new land.'
+
+    await interaction.response.send_message(message)
+
+
+async def get_land(land_id):
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    land = lands.get(land_id, "")
+
+    return land
+
+
+async def get_species(species_name):
+    with open("./species.json", "r") as file:
+        species_list = json.load(file)
+
+    species = species_list.get(species_name, "")
+
+    return species
 
 
 async def main():
