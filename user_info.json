@@ -3,7 +3,13 @@
         "quacks": 3,
         "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": ""
+        "quackRank": "",
+        "spentQuacks": 0,
+        "quackerinos": 0,
+        "renown": 0,
+        "homeland_id": -1,
+        "land_ids": [],
+        "mischief": false
     },
     "634175591033208844": {
         "quacks": 3,

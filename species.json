@@ -1,0 +1,42 @@
+{
+    "default": {
+        "enabled": false,
+        "all-season": {
+            "bonusIncomePerQuality": 0,
+            "bonusATK": 0,
+            "canAttack": true,
+            "deserts": true,
+            "upkeepDiscountPerTroop": 0,
+            "incomePenaltyPercentInSiege": 100,
+            "upkeepExtraPerTroopInOffensiveSiege": 1,
+            "percentBuildingsDestroyedOnConquest": 0.5
+        },
+        "spring": {},
+        "summer": {},
+        "fall": {},
+        "winter": {
+            "canAttack": false
+        }
+    },
+    "duck": {
+        "enabled": true
+    },
+    "monkey": {
+        "enabled": true
+    },
+    "penguin": {
+        "enabled": true
+    },
+    "rat": {
+        "enabled": true
+    },
+    "wildcat": {
+        "enabled": true
+    },
+    "wolf": {
+        "enabled": true
+    },
+    "raccoon": {
+        "enabled": false
+    }
+}

@@ -24,6 +24,9 @@ async def dailyReset():
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
     # Reset streak counter if the streak is broken
     for userId, user in user_info.items():
         if not bool(user["quackedToday"]):
@@ -36,15 +39,19 @@ async def dailyReset():
         if target_rank != user["quackRank"]:
             user["quackRank"] = target_rank
 
+    # Randomize the q-qq exchange rate
+    global_info["qqExchangeRate"] = random.randint(int(
+        global_info["qqExchangeRateRange"][0]), int(global_info["qqExchangeRateRange"][0]))
+
     # Save to database
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
+    with open("./global_info.json", "w") as file:
+        json.dump(global_info, file, indent=4)
+
     # Tell the specified channel about the update
     try:
-        with open("./global_info.json", "r") as file:
-            global_info = json.load(file)
-
         destination_channel = int(global_info["new_day_channel_id"])
         await client.get_channel(destination_channel).send(
             "A new day has arrived and the ducks feel refreshed from their slumber.")
@@ -102,6 +109,90 @@ async def quack(interaction: discord.Interaction):
     await interaction.response.send_message(message)
 
 
+@client.tree.command(name="pay", description="Give a player some quackerinos.")
+async def pay(interaction: discord.Interaction, target_user_id: str, number: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        if user == target:
+            await interaction.response.send_message("You can't give quackerinos to yourself.")
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Make sure the player can't give more quackerinos than they have
+    try:
+        if int(user["quackerinos"]) < number:
+            await interaction.response.send_message("You don't have enough quackerinos for that.")
+            return
+    except:
+        await interaction.response.send_message("You don't have enough quackerinos for that.")
+        return
+
+    # Give the other player quackerinos, but check if they have the quackerinos attribute yet
+    target["quackerinos"] = target.get("quackerinos", 0) + number
+    user["quackerinos"] -= number
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You transferred {number} quackerinos to {client.get_user(int(target_user_id))}. They now have {target["quackerinos"]} qq and you now have {user["quackerinos"]} qq.')
+
+
+@client.tree.command(name="buyqq", description="Trade in some of your quacks for quackerinos.")
+async def buy_qq(interaction: discord.Interaction, quacks: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the player has enough quacks
+    if int(user["quacks"]) - int(user["spentQuacks"]) < quacks:
+        await interaction.response.send_message("You don't have enough quacks for that.")
+        return
+
+    user["spentQuacks"] += quacks
+    result = int(global_info["qqExchangeRate"]) * quacks
+    user["quackerinos"] = user.get("quackerinos", 0) + result
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]} quacks.')
+
+
+@client.tree.command(name="qqrate", description="Check the current quacks-quackerino exchange rate.")
+async def qq_rate(interaction: discord.Interaction):
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    await interaction.response.send_message(f'Currently 1 quack can buy {global_info["qqExchangeRate"]} quackerinos.')
+
+
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
 async def quackery(interaction: discord.Interaction, number: int = 10):
     with open("./user_info.json", "r") as file:
@@ -146,20 +237,29 @@ async def quack_info(interaction: discord.Interaction, user_id: int = 0):
     if user_id == 0:
         user_id = interaction.user.id
 
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
     try:
         message = f'{client.get_user(user_id)}'
-        if user_info[str(user_id)]["quackRank"] != "":
-            message += f' the {user_info[str(user_id)]["quackRank"]}'
+        if user["quackRank"] != "":
+            message += f' the {user["quackRank"]}'
 
-        message += f' has quacked {user_info[str(user_id)]["quacks"]} times and is on a {user_info[str(user_id)]["quackStreak"]} day streak. '
+        message += f' has quacked {user["quacks"]} times and is on a {user["quackStreak"]} day streak. '
 
-        next_rank = await get_next_quack_rank(user_info[str(user_id)]["quackRank"])
+        next_rank = await get_next_quack_rank(user["quackRank"])
 
         if next_rank != "":
-            quacks = int(user_info[str(user_id)]["quacks"])
+            quacks = int(user["quacks"])
             next_quacks = int(global_info["quackRank"][next_rank])
 
-            message += f'They are {next_quacks-quacks} quacks away from the next rank of {next_rank}.'
+            message += f'They are {next_quacks-quacks} quacks away from the next rank of {next_rank}. '
+
+        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos.'
 
     except:
         message = 'That user has not quacked yet.'

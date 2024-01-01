@@ -15,5 +15,11 @@
         "Lord of the Ducks": 912,
         "Duck Diety": 1460,
         "Duck Singularity": 3650
-    }
+    },
+    "qqExchangeRate": 15,
+    "qqExchangeRateRange": [
+        15,
+        25
+    ],
+    "totalLands": 0
 }
