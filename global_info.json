@@ -22,6 +22,8 @@
         25
     ],
     "landCounter": 1,
+    "landLimit": 3,
+    "landIncomePenaltyPercentPerLand": 0.2,
     "qualityImprovementProbability": 0.2,
     "qualityDecayProbability": 0.2,
     "task_queue": [],

@@ -13,7 +13,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "634175591033208844": {
         "quacks": 4,
@@ -29,7 +30,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "693257736867020870": {
         "quacks": 4,
@@ -45,7 +47,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "479504133993529344": {
         "quacks": 4,
@@ -61,7 +64,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "692095041635614750": {
         "quacks": 4,
@@ -77,7 +81,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "712336169270116403": {
         "quacks": 4,
@@ -93,7 +98,8 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     },
     "542494071965614091": {
         "quacks": 4,
@@ -109,6 +115,7 @@
         "land_ids": [],
         "mischief": false,
         "species": "",
-        "party": []
+        "party": [],
+        "siege_location_ids": []
     }
 }

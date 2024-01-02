@@ -28,6 +28,38 @@ async def dailyReset():
         global_info = json.load(file)
 
     for userId, user in user_info.items():
+
+        # Collect the income from each land
+        for land_id in user["land_ids"]:
+            land = await get_land(land_id)
+
+            species = await get_species(land["species"])
+            income = land["quality"] + \
+                int(species[global_info["current_season"]].get(
+                    "bonusIncomePerQuality", species["all-season"]["bonusIncomePerQuality"]) * land["quality"])
+
+            # Remove income if they have too many lands
+            if len(user["land_ids"]) > global_info["landLimit"]:
+                income -= income * \
+                    global_info["landIncomePenaltyPercentPerLand"]
+                income = min(0, income)
+
+            # Don't collect if the land is being sieged by a superior foe
+            # Count total number of HP+DEF for both sides
+
+            # Add the income to the user
+            user["quackerinos"] += income
+
+            if land["quality"] > land["maxQuality"]:
+                # Roll for increase land quality if the user quacked
+                if bool(user["quackedToday"]):
+                    if random.random() < global_info["qualityImprovementProbability"]:
+                        land["quality"] += 1
+                else:
+                    # Roll for decrease land quality of the user didn't quack
+                    if land["quality"] > 0 and random.random() < global_info["qualityDecayProbability"]:
+                        land["quality"] -= 1
+
         # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
             user["quackStreak"] = 0
@@ -39,21 +71,18 @@ async def dailyReset():
         if target_rank != user["quackRank"]:
             user["quackRank"] = target_rank
 
-        # Collect the income from each land
-        for land_id in user["land_ids"]:
-            land = await get_land(land_id)
-
-            # Don't collect if the land is being sieged by a superior foe
-
         # Attempt to pay all the soldiers in the party and garrisoned in each land
 
         # If no money is left then disband all the soldiers that cant be paid
 
     # Execute the task queue
-    # 1) Do attacks/lay siege
-    # 2) Build queued buildings
-    # 3) Hire/upgrade troops
-    # 4)
+    for task in global_info["task_queue"]:
+        # 1) Do attacks/lay siege
+        # 2) Build queued buildings
+        # 3) Hire/upgrade troops
+        print("")
+
+    global_info["task_queue"] = []
 
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
@@ -121,9 +150,10 @@ async def quack(interaction: discord.Interaction):
             "taxPerVassalLand": 0,
             "homeland_id": -1,
             "land_ids": [],
-            "mischief": false,
+            "mischief": False,
             "species": "",
-            "party": []
+            "party": [],
+            "siege_location_ids": []
         }
         user_info[user_id] = new_user
         message = f'{username} quacked for the first time!'
@@ -408,7 +438,32 @@ async def get_species(species_name):
     with open("./species.json", "r") as file:
         species_list = json.load(file)
 
-    species = species_list.get(species_name, "")
+    try:
+        overrides = species_list[species_name]
+    except:
+        return ""
+
+    # species = species_list.get(species_name, "")
+    species = species_list.get("default", "")
+
+    # Replace the attributes with the species specific overrides
+    species["enabled"] = overrides.get("enabled", species["enabled"])
+    species["mischief"] = overrides.get("mischief", species["mischief"])
+
+    for attr, value in overrides["all-season"].items():
+        species["all-season"][attr] = value
+
+    for attr, value in overrides["spring"].items():
+        species["spring"][attr] = value
+
+    for attr, value in overrides["summer"].items():
+        species["summer"][attr] = value
+
+    for attr, value in overrides["fall"].items():
+        species["fall"][attr] = value
+
+    for attr, value in overrides["winter"].items():
+        species["winter"][attr] = value
 
     return species
 

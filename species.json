@@ -24,7 +24,6 @@
     },
     "duck": {
         "enabled": true,
-        "mischief": false,
         "all-season": {
             "bonusIncomePerQuality": 0.33333334
         },
@@ -35,7 +34,6 @@
     },
     "monkey": {
         "enabled": true,
-        "mischief": false,
         "all-season": {},
         "spring": {},
         "summer": {
@@ -46,7 +44,6 @@
     },
     "penguin": {
         "enabled": true,
-        "mischief": false,
         "all-season": {},
         "spring": {},
         "summer": {},
@@ -58,7 +55,6 @@
     },
     "rat": {
         "enabled": true,
-        "mischief": false,
         "all-season": {},
         "spring": {},
         "summer": {},
@@ -67,7 +63,6 @@
     },
     "wildcat": {
         "enabled": true,
-        "mischief": false,
         "all-season": {},
         "spring": {},
         "summer": {},
@@ -76,7 +71,6 @@
     },
     "wolf": {
         "enabled": true,
-        "mischief": false,
         "all-season": {
             "upkeepDiscountPerTroop": 0.25
         },
@@ -86,8 +80,6 @@
         "winter": {}
     },
     "fox": {
-        "enabled": false,
-        "mischief": false,
         "all-season": {
             "desertsOnOathbreaker": false,
             "percentBuildingsDestroyedOnConquest": 1
@@ -98,8 +90,7 @@
         "winter": {}
     },
     "raccoon": {
-        "enabled": false,
-        "mischief": false,
+        "mischief": true,
         "all-season": {},
         "spring": {},
         "summer": {},
