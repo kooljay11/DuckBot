@@ -88,6 +88,10 @@ async def dailyReset():
     global_info["qqExchangeRate"] = random.randint(int(
         global_info["qqExchangeRateRange"][0]), int(global_info["qqExchangeRateRange"][1]))
 
+    # Add to the day counter and cycle the season accordingly
+    global_info["day_counter"] += 1
+    global_info["current_season"] = await get_season(global_info["day_counter"])
+
     # Save to database
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -356,15 +360,12 @@ async def get_next_quack_rank(quack_rank):
 
 
 @client.tree.command(name="homeland", description="Establish a new homeland for you and your people.")
-async def establish_homeland(interaction: discord.Interaction, name: str, species: str):
+async def establish_homeland(interaction: discord.Interaction, name: str, species_name: str):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
-
-    with open("./species.json", "r") as file:
-        species_list = json.load(file)
 
     user_id = interaction.user.id
 
@@ -376,11 +377,12 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         return
 
     # Make sure the species exists and is enabled
-    try:
-        if not bool(species_list[species]["enabled"]):
+    species = await get_species(species_name)
+    if species != "":
+        if not bool(species["enabled"]):
             await interaction.response.send_message("This species is not enabled.")
             return
-    except:
+    else:
         await interaction.response.send_message("Species not found.")
         return
 
@@ -397,12 +399,12 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         new_land = deepcopy(lands["default"])
         new_land["name"] = name
         new_land["owner_id"] = user_id
-        new_land["species"] = species
+        new_land["species"] = species_name
 
         lands[global_info["landCounter"]] = new_land
 
         user["homeland_id"] = global_info["landCounter"]
-        user["species"] = species
+        user["species"] = species_name
         user["land_ids"] = [global_info["landCounter"]]
 
         global_info["landCounter"] += 1
@@ -421,6 +423,54 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
             json.dump(lands, file, indent=4)
     except:
         message = 'There was an error trying to add the new land.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="species", description="View all the enabled species.")
+async def list_species(interaction: discord.Interaction):
+    with open("./species.json", "r") as file:
+        species_list = json.load(file)
+
+    message = f'**List of Playable Species**'
+
+    for species_name, species in species_list.items():
+        if bool(species.get("enabled", species_list["default"].get("enabled"))):
+            message += f'\n{species_name}: {species.get("description", species)}'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="buildings", description="View all the buildings that can be built.")
+async def list_buildings(interaction: discord.Interaction):
+    with open("./buildings.json", "r") as file:
+        buildings = json.load(file)
+
+    message = f'__**All Buildings**__'
+
+    for building_name, building in buildings.items():
+        if bool(building.get("enabled", buildings["default"].get("enabled"))):
+            # message += f'\n{building_name}: {building.get("description", building)}'
+            message += f'\n**{building_name}:** '
+            for key, value in building.items():
+                if key != "enabled":
+                    message += f'{key}: {value}; '
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="troops", description="View all the troops that can be hired.")
+async def list_troops(interaction: discord.Interaction):
+    with open("./troops.json", "r") as file:
+        troops = json.load(file)
+
+    message = f'__**All Troops**__'
+
+    for troop_name, troop in troops.items():
+        message += f'\n**{troop_name}:** '
+        for key, value in troop.items():
+            if value != "":
+                message += f'{key}: {value}; '
 
     await interaction.response.send_message(message)
 
@@ -466,6 +516,20 @@ async def get_species(species_name):
         species["winter"][attr] = value
 
     return species
+
+
+async def get_season(day):
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    dayx = deepcopy(day)
+
+    while True:
+        for season_name, length in global_info["seasons"].items():
+            if dayx <= length:
+                return season_name
+            else:
+                dayx -= length
 
 
 async def main():
