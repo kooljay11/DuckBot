@@ -1,3 +1,3 @@
 # Duck Bot
 
-Quack quack quack quack.
+Quack quack quack quack
