@@ -22,6 +22,10 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
+                    // Stop and remove the existing container if it exists
+                    sh 'docker stop discord-bot-container || true'
+                    sh 'docker rm discord-bot-container || true'
+
                     // Pass the Discord bot token as an environment variable to the Docker container
                     dockerImage.run("-e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN} -d --name discord-bot-container")
                 }
