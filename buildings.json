@@ -1,0 +1,98 @@
+{
+    "default": {
+        "enabled": false,
+        "ATKbonus": 0,
+        "HPbonus": 0,
+        "APbonus": 0,
+        "ATKbonusPerTroop": 0,
+        "HPbonusPerTroop": 0,
+        "APbonusPerTroop": 0,
+        "maxATKbonus": 9999,
+        "maxHPbonus": 9999,
+        "maxAPbonus": 9999,
+        "maxQualityBonus": 0,
+        "cost": 0,
+        "refundPercent": 0,
+        "upkeep": 0,
+        "fromUpgradeOnly": false,
+        "upgradesTo": "",
+        "demolishedTo": ""
+    },
+    "keep": {
+        "enabled": true,
+        "HPbonusPerTroop": 1,
+        "maxHPbonus": 30,
+        "cost": 100,
+        "upgradesTo": "castle"
+    },
+    "castle": {
+        "enabled": true,
+        "HPbonusPerTroop": 1,
+        "maxHPbonus": 100,
+        "cost": 300,
+        "upgradesTo": "fortress",
+        "demolishedTo": "keep"
+    },
+    "fortress": {
+        "enabled": true,
+        "HPbonusPerTroop": 1,
+        "maxHPbonus": 200,
+        "cost": 1000,
+        "demolishedTo": "castle"
+    },
+    "windmill": {
+        "enabled": true,
+        "maxQualityBonus": 30,
+        "cost": 300
+    },
+    "watermill": {
+        "enabled": true,
+        "maxQualityBonus": 18,
+        "cost": 200
+    },
+    "sawmill": {
+        "enabled": true,
+        "maxQualityBonus": 12,
+        "cost": 150
+    },
+    "bakery": {
+        "enabled": true,
+        "maxQualityBonus": 5,
+        "cost": 100
+    },
+    "blacksmith": {
+        "enabled": true,
+        "maxQualityBonus": 5,
+        "cost": 100
+    },
+    "stables": {
+        "enabled": true,
+        "maxQualityBonus": 2,
+        "cost": 50
+    },
+    "tannery": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 25
+    },
+    "tavern": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 25
+    },
+    "market": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 25
+    },
+    "sauna": {
+        "enabled": true,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
+    },
+    "brothel": {
+        "enabled": false,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
+    }
+}
