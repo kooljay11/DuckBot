@@ -21,7 +21,7 @@ async def dailyReset():
     #     randomresponses = file.readlines()
     #     response = random.choice(randomresponses)
     # await client.change_presence(activity=discord.Game(response))
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     # Reset streak counter if the streak is broken
@@ -37,7 +37,7 @@ async def dailyReset():
             user["quackRank"] = target_rank
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     # Tell the specified channel about the update
@@ -61,7 +61,7 @@ async def on_ready():
 
 @client.tree.command(name="quack", description="Get your quack in for today.")
 async def quack(interaction: discord.Interaction):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -96,7 +96,7 @@ async def quack(interaction: discord.Interaction):
         message = f'{username} quacked for the first time!'
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(message)
@@ -104,7 +104,7 @@ async def quack(interaction: discord.Interaction):
 
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
 async def quackery(interaction: discord.Interaction, number: int = 10):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     top_list = "Top Quackers"
@@ -137,7 +137,7 @@ async def get_max_quacks(users):
 
 @client.tree.command(name="quackinfo", description="Check out the quack info of a user.")
 async def quack_info(interaction: discord.Interaction, user_id: int = 0):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
