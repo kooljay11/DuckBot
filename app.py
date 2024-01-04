@@ -14,14 +14,14 @@ client = commands.Bot(command_prefix="/",
 
 
 @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-# @tasks.loop(minutes=60)
+# @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
     # with open("./bot_status.txt", "r") as file:
     #     randomresponses = file.readlines()
     #     response = random.choice(randomresponses)
     # await client.change_presence(activity=discord.Game(response))
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -93,7 +93,7 @@ async def dailyReset():
     global_info["current_season"] = await get_season(global_info["day_counter"])
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     with open("./global_info.json", "w") as file:
@@ -117,7 +117,7 @@ async def on_ready():
 
 @client.tree.command(name="quack", description="Get your quack in for today.")
 async def quack(interaction: discord.Interaction):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -167,7 +167,7 @@ async def quack(interaction: discord.Interaction):
         message = f'{username} quacked for the first time!'
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(message)
@@ -175,7 +175,7 @@ async def quack(interaction: discord.Interaction):
 
 @client.tree.command(name="pay", description="Give a player some quackerinos.")
 async def pay(interaction: discord.Interaction, target_user_id: str, number: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -215,7 +215,7 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
     user["quackerinos"] -= number
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You transferred {number} quackerinos to {client.get_user(int(target_user_id))}. They now have {target["quackerinos"]} qq and you now have {user["quackerinos"]} qq.')
@@ -223,7 +223,7 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
 
 @client.tree.command(name="buyqq", description="Trade in some of your quacks for quackerinos.")
 async def buy_qq(interaction: discord.Interaction, quacks: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -248,7 +248,7 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
     user["quackerinos"] = user.get("quackerinos", 0) + result
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     message = f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]-user["spentQuacks"]} unspent quacks.'
@@ -266,7 +266,7 @@ async def qq_rate(interaction: discord.Interaction):
 
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
 async def quackery(interaction: discord.Interaction, number: int = 10):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     top_list = "Top Quackers"
@@ -298,8 +298,10 @@ async def get_max_quacks(users):
 
 
 @client.tree.command(name="quackinfo", description="Check out the quack info of a user.")
+async def quack_info(interaction: discord.Interaction, user_id: int = 0):
+    with open("./data/user_info.json", "r") as file:
 async def quack_info(interaction: discord.Interaction, user_id: str = ""):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -372,7 +374,7 @@ async def get_next_quack_rank(quack_rank):
 
 @client.tree.command(name="homeland", description="Establish a new homeland for you and your people.")
 async def establish_homeland(interaction: discord.Interaction, name: str, species_name: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -422,7 +424,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         message = 'New land created'
 
         # Save to database
-        with open("./user_info.json", "w") as file:
+        with open("./data/user_info.json", "w") as file:
             json.dump(user_info, file, indent=4)
 
         # Save to database
@@ -488,7 +490,7 @@ async def list_troops(interaction: discord.Interaction):
 
 @client.tree.command(name="build", description="Build a new building in one of your lands (takes one month).")
 async def build(interaction: discord.Interaction, location_id: int, building_name: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -533,7 +535,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
 
 @client.tree.command(name="demolish", description="Destroy a building in one of your lands.")
 async def demolish(interaction: discord.Interaction, location_id: int, building_name: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./lands.json", "r") as file:
@@ -577,7 +579,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     user["quackerinos"] += refund
     message = f'{building_name} was destroyed and you were refunded {refund} quackerinos.'
 
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     with open("./lands.json", "w") as file:
@@ -588,7 +590,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
 
 @client.tree.command(name="hire", description="Hire some troops (takes one month).")
 async def hire(interaction: discord.Interaction, location_id: int, troop_name: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./lands.json", "r") as file:
@@ -639,7 +641,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
 
 @client.tree.command(name="disband", description="Disband some of your troops.")
 async def disband(interaction: discord.Interaction, location_id: int, troop_name: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./lands.json", "r") as file:
@@ -681,7 +683,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
 
     message = ""
 
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     with open("./lands.json", "w") as file:
@@ -802,10 +804,11 @@ async def add_to_queue(user_id, action, item, location_id):
 
 async def main():
     async with client:
-        with open("config.json", "r") as file:
-            config = json.load(file)
-
-        await client.start(config['token'])
+        # Reading token from environment variable
+        discord_token = os.getenv('DISCORD_BOT_TOKEN')
+        if not discord_token:
+            raise ValueError("No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+        await client.start(discord_token)
 
 
 asyncio.run(main())

@@ -1,127 +1,44 @@
 {
     "107886996365508608": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 5,
-        "quackerinos": 125,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": 1,
-        "land_ids": [
-            1
-        ],
-        "mischief": false,
-        "species": "duck",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "634175591033208844": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 3,
-        "quackerinos": 75,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": -1,
-        "land_ids": [],
-        "mischief": false,
-        "species": "",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "693257736867020870": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 5,
-        "quackerinos": 125,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": -1,
-        "land_ids": [],
-        "mischief": false,
-        "species": "",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "479504133993529344": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 6,
-        "quackerinos": 146,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": 2,
-        "land_ids": [
-            2
-        ],
-        "mischief": false,
-        "species": "duck",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "692095041635614750": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 4,
-        "quackerinos": 100,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": 3,
-        "land_ids": [
-            3
-        ],
-        "mischief": false,
-        "species": "penguin",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "712336169270116403": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 0,
-        "quackerinos": 0,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": -1,
-        "land_ids": [],
-        "mischief": false,
-        "species": "",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     },
     "542494071965614091": {
-        "quacks": 6,
-        "quackStreak": 6,
+        "quacks": 3,
+        "quackStreak": 3,
         "quackedToday": true,
-        "quackRank": "",
-        "spentQuacks": 0,
-        "quackerinos": 0,
-        "renown": 0,
-        "liege_id": 0,
-        "taxPerVassalLand": 0,
-        "homeland_id": -1,
-        "land_ids": [],
-        "mischief": false,
-        "species": "",
-        "party": [],
-        "siege_location_ids": []
+        "quackRank": ""
     }
 }
