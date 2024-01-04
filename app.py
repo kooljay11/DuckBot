@@ -298,8 +298,6 @@ async def get_max_quacks(users):
 
 
 @client.tree.command(name="quackinfo", description="Check out the quack info of a user.")
-async def quack_info(interaction: discord.Interaction, user_id: int = 0):
-    with open("./data/user_info.json", "r") as file:
 async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
