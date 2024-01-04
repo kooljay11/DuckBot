@@ -402,7 +402,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         await interaction.response.send_message("You already have a homeland.")
         return
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     # Create the new land
@@ -430,7 +430,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
             json.dump(global_info, file, indent=4)
 
         # Save to database
-        with open("./lands.json", "w") as file:
+        with open("./data/lands.json", "w") as file:
             json.dump(lands, file, indent=4)
     except:
         message = 'There was an error trying to add the new land.'
@@ -440,7 +440,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
 
 @client.tree.command(name="species", description="View all the enabled species.")
 async def list_species(interaction: discord.Interaction):
-    with open("./species.json", "r") as file:
+    with open("./data/species.json", "r") as file:
         species_list = json.load(file)
 
     message = f'**List of Playable Species**'
@@ -454,7 +454,7 @@ async def list_species(interaction: discord.Interaction):
 
 @client.tree.command(name="buildings", description="View all the buildings that can be built.")
 async def list_buildings(interaction: discord.Interaction):
-    with open("./buildings.json", "r") as file:
+    with open("./data/buildings.json", "r") as file:
         buildings = json.load(file)
 
     message = f'__**All Buildings**__'
@@ -472,7 +472,7 @@ async def list_buildings(interaction: discord.Interaction):
 
 @client.tree.command(name="troops", description="View all the troops that can be hired.")
 async def list_troops(interaction: discord.Interaction):
-    with open("./troops.json", "r") as file:
+    with open("./data/troops.json", "r") as file:
         troops = json.load(file)
 
     message = f'__**All Troops**__'
@@ -536,7 +536,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     user_id = interaction.user.id
@@ -580,7 +580,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    with open("./lands.json", "w") as file:
+    with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
     await interaction.response.send_message(message)
@@ -591,7 +591,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     user_id = interaction.user.id
@@ -642,7 +642,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     user_id = interaction.user.id
@@ -684,14 +684,14 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    with open("./lands.json", "w") as file:
+    with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
     await interaction.response.send_message(message)
 
 
 async def get_troop(troop_name):
-    with open("./troops.json", "r") as file:
+    with open("./data/troops.json", "r") as file:
         troops = json.load(file)
 
     try:
@@ -709,7 +709,7 @@ async def get_troop(troop_name):
 
 
 async def get_building(building_name):
-    with open("./buildings.json", "r") as file:
+    with open("./data/buildings.json", "r") as file:
         buildings = json.load(file)
 
     try:
@@ -727,7 +727,7 @@ async def get_building(building_name):
 
 
 async def get_land(land_id):
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     land = lands.get(str(land_id), "")
@@ -736,7 +736,7 @@ async def get_land(land_id):
 
 
 async def get_species(species_name):
-    with open("./species.json", "r") as file:
+    with open("./data/species.json", "r") as file:
         species_list = json.load(file)
 
     try:
