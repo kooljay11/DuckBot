@@ -7,14 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Delete Existing Container') {
-            steps {
-                script {
-                    // Remove existing container if it exists
-                    sh "docker rm -f discord-bot-container || true"
-                }
-            }
-        }
         stage('Checkout') {
             steps {
                 checkout scm
