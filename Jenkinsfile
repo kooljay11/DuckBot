@@ -26,8 +26,8 @@ pipeline {
                     sh 'docker stop discord-bot-container || true'
                     sh 'docker rm discord-bot-container || true'
 
-                    // Pass the Discord bot token as an environment variable to the Docker container
-                    dockerImage.run("-e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN} -d --name discord-bot-container")
+                    // Map the host directory containing user_info.json to a directory inside the container
+                    sh 'docker run -e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN} -v ${WORKSPACE}:/app -d --name discord-bot-container duck-bot:${env.BUILD_ID}'
                 }
             }
         }
