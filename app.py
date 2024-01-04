@@ -201,10 +201,11 @@ async def get_next_quack_rank(quack_rank):
 
 async def main():
     async with client:
-        with open("config.json", "r") as file:
-            config = json.load(file)
-
-        await client.start(config['token'])
+        # Reading token from environment variable
+        discord_token = os.getenv('DISCORD_BOT_TOKEN')
+        if not discord_token:
+            raise ValueError("No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+        await client.start(discord_token)
 
 
 asyncio.run(main())
