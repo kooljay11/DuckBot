@@ -14,7 +14,7 @@ client = commands.Bot(command_prefix="/",
 
 
 @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-# @tasks.loop(minutes=1)
+# @tasks.loop(minutes=60)
 async def dailyReset():
     print('Daily reset occurring')
     # with open("./bot_status.txt", "r") as file:
@@ -133,7 +133,11 @@ async def quack(interaction: discord.Interaction):
             user["quackedToday"] = True
             user["quacks"] += 1
             user["quackStreak"] += 1
-            message = f'{username} quacked loudly.'
+
+            if user["species"] == "penguin":
+                message = f'{username}: noot noot!'
+            else:
+                message = f'{username} quacked loudly.'
 
             if user["quackStreak"] >= global_info["maxQuackStreakLength"]:
                 user["quackStreak"] -= global_info["maxQuackStreakLength"]
@@ -192,6 +196,11 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
         await interaction.response.send_message("Target has not quacked yet.")
         return
 
+    # Make sure the player can't give negative quackerinos
+    if number < 1:
+        await interaction.response.send_message("Nice try.")
+        return
+
     # Make sure the player can't give more quackerinos than they have
     try:
         if int(user["quackerinos"]) < number:
@@ -242,7 +251,9 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]} quacks.')
+    message = f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]-user["spentQuacks"]} unspent quacks.'
+
+    await interaction.response.send_message(message)
 
 
 @client.tree.command(name="qqrate", description="Check the current quacks-quackerino exchange rate.")
@@ -287,25 +298,25 @@ async def get_max_quacks(users):
 
 
 @client.tree.command(name="quackinfo", description="Check out the quack info of a user.")
-async def quack_info(interaction: discord.Interaction, user_id: int = 0):
+async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
-    if user_id == 0:
+    if user_id == "":
         user_id = interaction.user.id
 
     # Make sure this player exists in user_info
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await interaction.response.send_message("That user has not quacked yet.")
         return
 
     try:
-        message = f'{client.get_user(user_id)}'
+        message = f'{client.get_user(int(user_id))}'
         if user["quackRank"] != "":
             message += f' the {user["quackRank"]}'
 
@@ -475,11 +486,251 @@ async def list_troops(interaction: discord.Interaction):
     await interaction.response.send_message(message)
 
 
+@client.tree.command(name="build", description="Build a new building in one of your lands (takes one month).")
+async def build(interaction: discord.Interaction, location_id: int, building_name: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    building = await get_building(building_name)
+    land = await get_land(location_id)
+
+    # Fail if building doesn't exist
+    if building == "":
+        await interaction.response.send_message('Building not found.')
+        return
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if str(location_id) not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if the building has already been built on that land
+    if building_name in land["buildings"]:
+        await interaction.response.send_message('That building has already been built there.')
+        return
+
+    # Add it to the queue
+    await add_to_queue(user_id, "build", building_name, location_id)
+
+    message = ""
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="demolish", description="Destroy a building in one of your lands.")
+async def demolish(interaction: discord.Interaction, location_id: int, building_name: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    building = await get_building(building_name)
+    land = lands.get(location_id, "")
+
+    # Fail if building doesn't exist
+    if building == "":
+        await interaction.response.send_message('Building not found.')
+        return
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if str(location_id) not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if that building has not been built on that land yet
+    if building_name not in land["buildings"]:
+        await interaction.response.send_message('That building has not been built there yet.')
+        return
+
+    # Remove the building from that land and give the user a percent of the money
+    land["buildings"].remove(building_name)
+    refund = building["refundPercent"] * building["cost"]
+    user["quackerinos"] += refund
+    message = f'{building_name} was destroyed and you were refunded {refund} quackerinos.'
+
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    with open("./lands.json", "w") as file:
+        json.dump(lands, file, indent=4)
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="hire", description="Hire some troops (takes one month).")
+async def hire(interaction: discord.Interaction, location_id: int, troop_name: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    troop = await get_troop(troop_name)
+    # land = lands.get("location_id", "")
+    land = await get_land(location_id)
+
+    # Fail if troop doesn't exist
+    if troop == "":
+        await interaction.response.send_message('Troop not found.')
+        return
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if str(location_id) not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if that troop doesn't match the species of the land
+    if bool(troop["requiresSpeciesMatch"]) and troop["species"] != land["species"]:
+        await interaction.response.send_message('You can\'t hire that troop there.')
+        return
+
+    # Fail if that troop requires upgrading and can't be hired directly
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "hire", troop_name, location_id)
+
+    message = ""
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="disband", description="Disband some of your troops.")
+async def disband(interaction: discord.Interaction, location_id: int, troop_name: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    troop = await get_troop(troop_name)
+    land = lands.get("location_id", "")
+
+    # Fail if troop doesn't exist
+    if troop == "":
+        await interaction.response.send_message('Troop not found.')
+        return
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if str(location_id) not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if that troop doesn't match the species of the land
+    if bool(troop["requiresSpeciesMatch"]) and troop["species"] != land["species"]:
+        await interaction.response.send_message('You can\'t hire that troop there.')
+        return
+
+    # Remove troops from that user's land
+
+    message = ""
+
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    with open("./lands.json", "w") as file:
+        json.dump(lands, file, indent=4)
+
+    await interaction.response.send_message(message)
+
+
+async def get_troop(troop_name):
+    with open("./troops.json", "r") as file:
+        troops = json.load(file)
+
+    try:
+        overrides = troops[troop_name]
+    except:
+        return ""
+
+    troop = troops.get(f'default_tier{overrides["tier"]}', {})
+
+    # Replace the attributes with the troop specific overrides
+    for attr, value in overrides.items():
+        troop[attr] = value
+
+    return troop
+
+
+async def get_building(building_name):
+    with open("./buildings.json", "r") as file:
+        buildings = json.load(file)
+
+    try:
+        overrides = buildings[building_name]
+    except:
+        return ""
+
+    building = buildings.get("default", "")
+
+    # Replace the attributes with the building specific overrides
+    for attr, value in overrides.items():
+        building[attr] = value
+
+    return building
+
+
 async def get_land(land_id):
     with open("./lands.json", "r") as file:
         lands = json.load(file)
 
-    land = lands.get(land_id, "")
+    land = lands.get(str(land_id), "")
 
     return land
 
@@ -530,6 +781,23 @@ async def get_season(day):
                 return season_name
             else:
                 dayx -= length
+
+
+async def add_to_queue(user_id, action, item, location_id):
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    task = {
+        "user_id": user_id,
+        "task": action,
+        "item": item,
+        "location_id": location_id
+    }
+
+    global_info["task_queue"].append(task)
+
+    with open("./global_info.json", "w") as file:
+        json.dump(global_info, file, indent=4)
 
 
 async def main():

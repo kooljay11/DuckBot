@@ -16,19 +16,19 @@
         "Duck Diety": 1460,
         "Duck Singularity": 3650
     },
-    "qqExchangeRate": 15,
+    "qqExchangeRate": 24,
     "qqExchangeRateRange": [
         15,
         25
     ],
-    "landCounter": 1,
+    "landCounter": 4,
     "landLimit": 3,
     "landIncomePenaltyPercentPerLand": 0.2,
     "qualityImprovementProbability": 0.2,
     "qualityDecayProbability": 0.2,
     "task_queue": [],
-    "day_counter": 4,
-    "current_season": "",
+    "day_counter": 6,
+    "current_season": "summer",
     "seasons": {
         "spring": 3,
         "summer": 3,

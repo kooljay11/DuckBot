@@ -84,5 +84,15 @@
         "enabled": true,
         "maxQualityBonus": 1,
         "cost": 25
+    },
+    "sauna": {
+        "enabled": true,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
+    },
+    "brothel": {
+        "enabled": false,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
     }
 }

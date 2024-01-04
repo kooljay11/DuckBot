@@ -8,7 +8,8 @@
         "cost": 4,
         "upkeep": 1,
         "fromUpgradeOnly": false,
-        "upgradesTo": ""
+        "upgradesTo": "",
+        "requiresSpeciesMatch": true
     },
     "default_tier2": {
         "species": "",
@@ -19,7 +20,8 @@
         "cost": 16,
         "upkeep": 1,
         "fromUpgradeOnly": true,
-        "upgradesTo": ""
+        "upgradesTo": "",
+        "requiresSpeciesMatch": true
     },
     "default_tier3": {
         "species": "",
@@ -30,7 +32,8 @@
         "cost": 24,
         "upkeep": 1,
         "fromUpgradeOnly": true,
-        "upgradesTo": ""
+        "upgradesTo": "",
+        "requiresSpeciesMatch": true
     },
     "default_tier4": {
         "species": "",
@@ -41,7 +44,8 @@
         "cost": 32,
         "upkeep": 1,
         "fromUpgradeOnly": true,
-        "upgradesTo": ""
+        "upgradesTo": "",
+        "requiresSpeciesMatch": true
     },
     "Duck Militia": {
         "species": "duck",
@@ -140,13 +144,15 @@
         "tier": 2,
         "cost": 14,
         "upkeep": 2,
-        "fromUpgradeOnly": false
+        "fromUpgradeOnly": false,
+        "requiresSpeciesMatch": false
     },
     "Fox Knight": {
         "species": "fox",
         "tier": 3,
         "cost": 20,
         "upkeep": 2,
-        "fromUpgradeOnly": false
+        "fromUpgradeOnly": false,
+        "requiresSpeciesMatch": false
     }
 }
