@@ -13,8 +13,9 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+# @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
 # @tasks.loop(minutes=60)
+@tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
     # with open("./bot_status.txt", "r") as file:
@@ -27,11 +28,15 @@ async def dailyReset():
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
     for userId, user in user_info.items():
 
         # Collect the income from each land
         for land_id in user["land_ids"]:
-            land = await get_land(land_id)
+            # print(f'lands[land_id]: {lands[land_id]}')
+            land = lands[str(land_id)]
 
             species = await get_species(land["species"])
             income = land["quality"] + \
@@ -50,15 +55,15 @@ async def dailyReset():
             # Add the income to the user
             user["quackerinos"] += income
 
-            if land["quality"] > land["maxQuality"]:
-                # Roll for increase land quality if the user quacked
-                if bool(user["quackedToday"]):
+            # Roll for increase land quality if the user quacked
+            if bool(user["quackedToday"]):
+                if land["quality"] < land["maxQuality"]:
                     if random.random() < global_info["qualityImprovementProbability"]:
                         land["quality"] += 1
-                else:
-                    # Roll for decrease land quality of the user didn't quack
-                    if land["quality"] > 0 and random.random() < global_info["qualityDecayProbability"]:
-                        land["quality"] -= 1
+            else:
+                # Roll for decrease land quality of the user didn't quack
+                if land["quality"] > 0 and random.random() < global_info["qualityDecayProbability"]:
+                    land["quality"] -= 1
 
         # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
@@ -98,6 +103,9 @@ async def dailyReset():
 
     with open("./global_info.json", "w") as file:
         json.dump(global_info, file, indent=4)
+
+    with open("./lands.json", "w") as file:
+        json.dump(lands, file, indent=4)
 
     # Tell the specified channel about the update
     try:
@@ -587,12 +595,9 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
 
 
 @client.tree.command(name="hire", description="Hire some troops (takes one month).")
-async def hire(interaction: discord.Interaction, location_id: int, troop_name: str):
+async def hire(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
-
-    with open("./lands.json", "r") as file:
-        lands = json.load(file)
 
     user_id = interaction.user.id
 
@@ -628,9 +633,65 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
         return
 
     # Fail if that troop requires upgrading and can't be hired directly
+    if bool(troop["fromUpgradeOnly"]):
+        await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
+        return
 
     # Add the task to the queue
-    await add_to_queue(user_id, "hire", troop_name, location_id)
+    await add_to_queue(user_id, "hire", troop_name, location_id, amount)
+
+    message = ""
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="upgrade", description="Upgrade some troops (takes one month).")
+async def upgrade(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    troop = await get_troop(troop_name)
+    # land = lands.get("location_id", "")
+    land = await get_land(location_id)
+
+    # Fail if troop doesn't exist
+    if troop == "":
+        await interaction.response.send_message('Troop not found.')
+        return
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if str(location_id) not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if that troop requires upgrading and can't be hired directly
+    if bool(troop["fromUpgradeOnly"]):
+        await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
+        return
+
+    unit = await get_unit(land["garrison"])
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        await interaction.response.send_message(f'You don\'t have enough of that troop to upgrade {amount} of them.')
+        return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "upgrade", troop_name, location_id, amount)
 
     message = ""
 
@@ -638,7 +699,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
 
 
 @client.tree.command(name="disband", description="Disband some of your troops.")
-async def disband(interaction: discord.Interaction, location_id: int, troop_name: str):
+async def disband(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
@@ -677,9 +738,21 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('You can\'t hire that troop there.')
         return
 
-    # Remove troops from that user's land
+    unit = await get_unit(land["garrison"])
 
-    message = ""
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        await interaction.response.send_message(f'You don\'t have enough of that troop to disband {amount} of them.')
+        return
+
+    # Remove troops from that user's land
+    unit["amount"] -= amount
+
+    # Give refund to user if necessary
+    refund = troop["refundPercentOnDisband"] * troop["cost"] * amount
+    user["quackerinos"] += refund
+
+    message = f'{amount} {troop_name}s were disbanded. {refund} qq were refunded to the user.'
 
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -783,7 +856,15 @@ async def get_season(day):
                 dayx -= length
 
 
-async def add_to_queue(user_id, action, item, location_id):
+async def get_unit(army, troop_name):
+    for unit in army:
+        if unit["troop_name"] == troop_name:
+            return unit
+
+    return ""
+
+
+async def add_to_queue(user_id, action, item, location_id, amount=1):
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
@@ -791,7 +872,8 @@ async def add_to_queue(user_id, action, item, location_id):
         "user_id": user_id,
         "task": action,
         "item": item,
-        "location_id": location_id
+        "location_id": location_id,
+        "amount": amount
     }
 
     global_info["task_queue"].append(task)

@@ -1,5 +1,6 @@
 {
-    "new_day_channel_id": 1071097907903742062,
+    "new_day_channel_id": 1058195964491477062,
+    "usual_channel_id": 1071097907903742062,
     "maxQuackStreakLength": 7,
     "quackStreakReward": 1,
     "quackRank": {
@@ -16,7 +17,7 @@
         "Duck Diety": 1460,
         "Duck Singularity": 3650
     },
-    "qqExchangeRate": 24,
+    "qqExchangeRate": 23,
     "qqExchangeRateRange": [
         15,
         25
@@ -27,8 +28,8 @@
     "qualityImprovementProbability": 0.2,
     "qualityDecayProbability": 0.2,
     "task_queue": [],
-    "day_counter": 6,
-    "current_season": "summer",
+    "day_counter": 26,
+    "current_season": "spring",
     "seasons": {
         "spring": 3,
         "summer": 3,

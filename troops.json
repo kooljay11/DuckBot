@@ -9,7 +9,8 @@
         "upkeep": 1,
         "fromUpgradeOnly": false,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier2": {
         "species": "",
@@ -21,7 +22,8 @@
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier3": {
         "species": "",
@@ -33,7 +35,8 @@
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier4": {
         "species": "",
@@ -45,7 +48,8 @@
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "Duck Militia": {
         "species": "duck",

@@ -12,7 +12,7 @@
     "1": {
         "name": "NewHaven",
         "owner_id": 107886996365508608,
-        "quality": 0,
+        "quality": 1,
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
@@ -22,7 +22,7 @@
     "2": {
         "name": "Climate Change",
         "owner_id": 479504133993529344,
-        "quality": 0,
+        "quality": 19,
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
