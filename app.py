@@ -13,9 +13,9 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-# @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
 # @tasks.loop(minutes=60)
-@tasks.loop(minutes=1)
+# @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
     # with open("./bot_status.txt", "r") as file:
@@ -522,7 +522,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
         return
 
     # Fail if the specified land doesn't belong to that player
-    if str(location_id) not in user["land_ids"]:
+    if location_id not in user["land_ids"]:
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
@@ -534,9 +534,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
     # Add it to the queue
     await add_to_queue(user_id, "build", building_name, location_id)
 
-    message = ""
-
-    await interaction.response.send_message(message)
+    await interaction.response.send_message(f'{client.get_user(user_id)} has started building a {building_name} at {land["name"]}.')
 
 
 @client.tree.command(name="demolish", description="Destroy a building in one of your lands.")
@@ -557,7 +555,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
         return
 
     building = await get_building(building_name)
-    land = lands.get(location_id, "")
+    land = lands.get(str(location_id), "")
 
     # Fail if building doesn't exist
     if building == "":
@@ -570,7 +568,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
         return
 
     # Fail if the specified land doesn't belong to that player
-    if str(location_id) not in user["land_ids"]:
+    if location_id not in user["land_ids"]:
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
@@ -583,7 +581,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     land["buildings"].remove(building_name)
     refund = building["refundPercent"] * building["cost"]
     user["quackerinos"] += refund
-    message = f'{building_name} was destroyed and you were refunded {refund} quackerinos.'
+    message = f'The {building_name} was destroyed and you were refunded {refund} qq.'
 
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -623,7 +621,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
         return
 
     # Fail if the specified land doesn't belong to that player
-    if str(location_id) not in user["land_ids"]:
+    if location_id not in user["land_ids"]:
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
@@ -640,9 +638,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
     # Add the task to the queue
     await add_to_queue(user_id, "hire", troop_name, location_id, amount)
 
-    message = ""
-
-    await interaction.response.send_message(message)
+    await interaction.response.send_message(f'You have started to hire {amount} {troop_name}s in {land["name"]}.')
 
 
 @client.tree.command(name="upgrade", description="Upgrade some troops (takes one month).")
@@ -674,7 +670,7 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
         return
 
     # Fail if the specified land doesn't belong to that player
-    if str(location_id) not in user["land_ids"]:
+    if location_id not in user["land_ids"]:
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
@@ -683,7 +679,7 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
         return
 
-    unit = await get_unit(land["garrison"])
+    unit = await get_unit(land["garrison"], troop_name)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
@@ -693,9 +689,7 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
     # Add the task to the queue
     await add_to_queue(user_id, "upgrade", troop_name, location_id, amount)
 
-    message = ""
-
-    await interaction.response.send_message(message)
+    await interaction.response.send_message(f'You have started to upgrade {amount} {troop_name}s in {land["name"]}.')
 
 
 @client.tree.command(name="disband", description="Disband some of your troops.")
@@ -716,7 +710,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         return
 
     troop = await get_troop(troop_name)
-    land = lands.get("location_id", "")
+    land = lands.get(str(location_id), "")
 
     # Fail if troop doesn't exist
     if troop == "":
@@ -729,7 +723,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         return
 
     # Fail if the specified land doesn't belong to that player
-    if str(location_id) not in user["land_ids"]:
+    if location_id not in user["land_ids"]:
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
@@ -738,7 +732,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('You can\'t hire that troop there.')
         return
 
-    unit = await get_unit(land["garrison"])
+    unit = await get_unit(land["garrison"], troop_name)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
@@ -747,6 +741,9 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
 
     # Remove troops from that user's land
     unit["amount"] -= amount
+
+    if unit["amount"] == 0:
+        land["garrison"].remove(unit)
 
     # Give refund to user if necessary
     refund = troop["refundPercentOnDisband"] * troop["cost"] * amount
@@ -850,6 +847,7 @@ async def get_season(day):
 
     while True:
         for season_name, length in global_info["seasons"].items():
+            print(f'[{dayx}]: {season_name}, {length}')
             if dayx <= length:
                 return season_name
             else:
