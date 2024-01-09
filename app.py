@@ -338,10 +338,29 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
 
             message += f'They are {next_quacks-quacks} quacks away from the next rank of {next_rank}. '
 
-        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos.'
+        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
+
+        if user["homeland_id"] > 0:
+            homeland = await get_land(user["homeland_id"])
+
+            if homeland["owner_id"] == user_id:
+                message += f'This user is in control of their homeland.'
+            else:
+                message += f'This user is not in control of their homeland.'
+
+        for land_id in user["land_ids"]:
+            land = await get_land(land_id)
+
+            message += f'\n\n**{land["name"]} (ID:{land_id}) - {land["species"]}**'
+            message += f'\nQuality: {land["quality"]}/{land["maxQuality"]}'
+            message += f'\nBuildings: {land["buildings"]}'
+            message += f'\nGarrison: {land["garrison"]}'
+
+            if land["siegeCamp"] != []:
+                message += f'\nSiege camp: {land["siegeCamp"]}'
 
     except:
-        message = 'That user has not quacked yet.'
+        message = 'Error while fetching user information.'
 
     await interaction.response.send_message(message)
 
@@ -532,7 +551,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
         return
 
     # Add it to the queue
-    await add_to_queue(user_id, "build", building_name, location_id)
+    await add_to_queue(user_id, "build", building_name, location_id, time=building["constructionTime"])
 
     await interaction.response.send_message(f'{client.get_user(user_id)} has started building a {building_name} at {land["name"]}.')
 
@@ -862,7 +881,7 @@ async def get_unit(army, troop_name):
     return ""
 
 
-async def add_to_queue(user_id, action, item, location_id, amount=1):
+async def add_to_queue(user_id, action, item, location_id, amount=1, time=1):
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
@@ -871,7 +890,8 @@ async def add_to_queue(user_id, action, item, location_id, amount=1):
         "task": action,
         "item": item,
         "location_id": location_id,
-        "amount": amount
+        "amount": amount,
+        "time": time
     }
 
     global_info["task_queue"].append(task)

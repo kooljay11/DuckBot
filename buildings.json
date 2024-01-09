@@ -16,14 +16,16 @@
         "upkeep": 0,
         "fromUpgradeOnly": false,
         "upgradesTo": "",
-        "demolishedTo": ""
+        "demolishedTo": "",
+        "constructionTime": 1
     },
     "keep": {
         "enabled": true,
         "HPbonusPerTroop": 1,
         "maxHPbonus": 30,
         "cost": 100,
-        "upgradesTo": "castle"
+        "upgradesTo": "castle",
+        "constructionTime": 10
     },
     "castle": {
         "enabled": true,
@@ -31,39 +33,46 @@
         "maxHPbonus": 100,
         "cost": 300,
         "upgradesTo": "fortress",
-        "demolishedTo": "keep"
+        "demolishedTo": "keep",
+        "constructionTime": 30
     },
     "fortress": {
         "enabled": true,
         "HPbonusPerTroop": 1,
         "maxHPbonus": 200,
         "cost": 1000,
-        "demolishedTo": "castle"
+        "demolishedTo": "castle",
+        "constructionTime": 60
     },
     "windmill": {
         "enabled": true,
         "maxQualityBonus": 30,
-        "cost": 300
+        "cost": 300,
+        "constructionTime": 15
     },
     "watermill": {
         "enabled": true,
         "maxQualityBonus": 18,
-        "cost": 200
+        "cost": 200,
+        "constructionTime": 9
     },
     "sawmill": {
         "enabled": true,
         "maxQualityBonus": 12,
-        "cost": 150
+        "cost": 150,
+        "constructionTime": 6
     },
     "bakery": {
         "enabled": true,
         "maxQualityBonus": 5,
-        "cost": 100
+        "cost": 100,
+        "constructionTime": 3
     },
     "blacksmith": {
         "enabled": true,
         "maxQualityBonus": 5,
-        "cost": 100
+        "cost": 100,
+        "constructionTime": 3
     },
     "stables": {
         "enabled": true,

@@ -7,7 +7,7 @@
         "species": "",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     },
     "1": {
         "name": "NewHaven",
@@ -17,7 +17,7 @@
         "species": "duck",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     },
     "2": {
         "name": "Climate Change",
@@ -27,7 +27,7 @@
         "species": "duck",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     },
     "3": {
         "name": "Peoples Republic of Antarctica",
@@ -37,6 +37,6 @@
         "species": "penguin",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     }
 }
