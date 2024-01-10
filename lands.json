@@ -16,7 +16,13 @@
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
-        "garrison": [],
+        "garrison": [
+            {
+                "troop_name": "Duck Militia",
+                "amount": 10,
+                "user_id": 107886996365508608
+            }
+        ],
         "siegeCamp": []
     },
     "2": {

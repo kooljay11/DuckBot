@@ -779,6 +779,289 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     await interaction.response.send_message(message)
 
 
+@client.tree.command(name="attack", description="Launch an assault on someone's land/castle (takes one month).")
+async def attack(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    land = await get_land(location_id)
+    target_land = await get_land(target_land_id)
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the other land doesn't exist
+    if target_land == "":
+        await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    unit = await get_unit(land["siegeCamp"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        unit = await get_unit(land["garrison"], troop_name, user_id)
+        if unit == "" or unit["amount"] < amount:
+            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            return
+
+    # Fail if the target land is yours
+    if target_land["owner_id"] == user_id:
+        await interaction.response.send_message(f'You can\'t attack yourself.')
+        return
+
+    ally_vassals = await get_allied_vassals(user_id)
+
+    # Fail if the target is the liege or vassal of your liege or your vassal
+    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
+        await interaction.response.send_message(f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+        return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
+
+    message = f'{amount} {troop_name}s were sent to attack {target_land["name"]}.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="defend", description="Defend someone's land/castle from an incoming assault (takes one month).")
+async def defend(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    land = await get_land(location_id)
+    target_land = await get_land(target_land_id)
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    unit = await get_unit(land["siegeCamp"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        unit = await get_unit(land["garrison"], troop_name, user_id)
+        if unit == "" or unit["amount"] < amount:
+            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            return
+
+    # Fail if the other land doesn't exist
+    if target_land == "":
+        await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    # Fail if they are both the same land
+    if location_id == target_land_id:
+        await interaction.response.send_message('You don\'t need to use this command for troops in the garrison of a land being attacked.')
+        return
+
+    unit = await get_unit(land["garrison"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on a defense mission.')
+        return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "defend", troop_name, location_id, amount, target_land=target_land_id)
+
+    message = f'{amount} {troop_name}s were sent to defend {target_land["name"]}.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="siege", description="Initiate or join a siege on someone's land (takes one month).")
+async def siege(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    land = await get_land(location_id)
+    target_land = await get_land(target_land_id)
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the other land doesn't exist
+    if target_land == "":
+        await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    unit = await get_unit(land["siegeCamp"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        unit = await get_unit(land["garrison"], troop_name, user_id)
+        if unit == "" or unit["amount"] < amount:
+            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send to the siege camp.')
+            return
+
+    # Fail if the target land is yours
+    if target_land["owner_id"] == user_id:
+        await interaction.response.send_message(f'You can\'t siege yourself.')
+        return
+
+    ally_vassals = await get_allied_vassals(user_id)
+
+    # Fail if the target is the liege or vassal of your liege or your vassal
+    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
+        await interaction.response.send_message(f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+        return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "siege", troop_name, location_id, amount, target_land=target_land_id)
+
+    message = f'{amount} {troop_name}s were sent to siege {target_land["name"]}.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="sallyout", description="Launch an assault on a siege camp (takes one month).")
+async def sallyout(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    land = await get_land(location_id)
+    target_land = await get_land(target_land_id)
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the other land doesn't exist
+    if target_land == "":
+        await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    unit = await get_unit(land["siegeCamp"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        unit = await get_unit(land["garrison"], troop_name, user_id)
+        if unit == "" or unit["amount"] < amount:
+            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "sallyout", troop_name, location_id, amount, target_land=target_land_id)
+
+    message = f'{amount} {troop_name}s were sent to attack the siege camp at {target_land["name"]}.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="move", description="Move troops to one of your or an ally's garrisons (takes one month).")
+async def move(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    land = await get_land(location_id)
+    target_land = await get_land(target_land_id)
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the other land doesn't exist
+    if target_land == "":
+        await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    unit = await get_unit(land["siegeCamp"], troop_name, user_id)
+
+    # Fail if that troop isn't in that land or if there aren't as many as specified
+    if unit == "" or unit["amount"] < amount:
+        unit = await get_unit(land["garrison"], troop_name, user_id)
+        if unit == "" or unit["amount"] < amount:
+            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send to {target_land["name"]}.')
+            return
+
+    # Fail if they are both the same land
+    if location_id == target_land_id:
+        await interaction.response.send_message('The developers stopped you from taking a useless action.')
+        return
+
+    ally_vassals = await get_allied_vassals(user_id)
+
+    # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
+    if target_land["owner_id"] != user_id:
+        if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
+            await interaction.response.send_message(f'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
+            return
+
+    # Add the task to the queue
+    await add_to_queue(user_id, "move", troop_name, location_id, amount, target_land=target_land_id)
+
+    message = f'{amount} {troop_name}s were sent to {target_land["name"]}\'s garrison.'
+
+    await interaction.response.send_message(message)
+
+
+async def get_allied_vassals(user_id):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user = user_info.get(str(user_id), "")
+    allies = []
+
+    for ally_id, ally in user_info.items():
+        if user["liege_id"] == ally["liege_id"]:
+            allies.append(ally_id)
+
+    return allies
+
+
 async def get_troop(troop_name):
     with open("./troops.json", "r") as file:
         troops = json.load(file)
@@ -873,15 +1156,15 @@ async def get_season(day):
                 dayx -= length
 
 
-async def get_unit(army, troop_name):
+async def get_unit(army, troop_name, user_id):
     for unit in army:
-        if unit["troop_name"] == troop_name:
+        if unit["troop_name"] == troop_name and str(unit["user_id"]) == str(user_id):
             return unit
 
     return ""
 
 
-async def add_to_queue(user_id, action, item, location_id, amount=1, time=1):
+async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
@@ -891,7 +1174,8 @@ async def add_to_queue(user_id, action, item, location_id, amount=1, time=1):
         "item": item,
         "location_id": location_id,
         "amount": amount,
-        "time": time
+        "time": time,
+        "target_land_id": target_land
     }
 
     global_info["task_queue"].append(task)

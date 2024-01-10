@@ -77,7 +77,8 @@
     "stables": {
         "enabled": true,
         "maxQualityBonus": 2,
-        "cost": 50
+        "cost": 50,
+        "constructionTime": 2
     },
     "tannery": {
         "enabled": true,
