@@ -28,7 +28,44 @@
     "landIncomePenaltyPercentPerLand": 0.2,
     "qualityImprovementProbability": 0.2,
     "qualityDecayProbability": 0.2,
-    "task_queue": [],
+    "task_queue": [
+        {
+            "user_id": 107886996365508608,
+            "task": "move",
+            "item": "Duck Militia",
+            "location_id": 1,
+            "amount": 1,
+            "time": 1,
+            "target_land_id": 2
+        },
+        {
+            "user_id": 107886996365508608,
+            "task": "siege",
+            "item": "Duck Militia",
+            "location_id": 1,
+            "amount": 2,
+            "time": 1,
+            "target_land_id": 3
+        },
+        {
+            "user_id": 107886996365508608,
+            "task": "build",
+            "item": "stables",
+            "location_id": 1,
+            "amount": 1,
+            "time": 2,
+            "target_land_id": 0
+        },
+        {
+            "user_id": 107886996365508608,
+            "task": "build",
+            "item": "fortress",
+            "location_id": 1,
+            "amount": 1,
+            "time": 60,
+            "target_land_id": 0
+        }
+    ],
     "day_counter": 73,
     "current_season": "spring",
     "seasons": {

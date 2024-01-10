@@ -412,6 +412,34 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
     await interaction.response.send_message(message)
 
 
+@client.tree.command(name="taskqueue", description="Check out the task queue.")
+async def view_task_queue(interaction: discord.Interaction):
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    message = f'__**Task Queue**__'
+
+    for task in global_info["task_queue"]:
+        land = await get_land(task["location_id"])
+        message += f'\n{client.get_user(int(task["user_id"]))} @ {land["name"]} ({task["location_id"]})'
+
+        if task["target_land_id"] > 0:
+            target = await get_land(task["target_land_id"])
+            message += f' → {target["name"]} ({task["target_land_id"]})'
+
+        message += f': {task["task"]}'
+
+        if task["amount"] > 1:
+            message += f' {task["amount"]} {task["item"]}s'
+        else:
+            message += f' {task["item"]}'
+
+        if task["time"] > 1:
+            message += f' (turns remaining: {task["time"]})'
+
+    await interaction.response.send_message(message)
+
+
 async def get_quack_rank(quacks):
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
