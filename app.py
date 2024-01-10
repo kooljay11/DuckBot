@@ -82,9 +82,12 @@ async def dailyReset():
 
     # Execute the task queue
     for task in global_info["task_queue"]:
-        # 1) Do attacks/lay siege
-        # 2) Build queued buildings
-        # 3) Hire/upgrade troops
+        # 1) siege commands
+        # 2) Resolve attack+defend battles
+        # 3) Resolve sallyout battles
+        # 4) move commands
+        # 5) Hire/upgrade troops
+        # 6) Increase building progress or build the queued building
         print("")
 
     global_info["task_queue"] = []
@@ -354,13 +357,57 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
             message += f'\n\n**{land["name"]} (ID:{land_id}) - {land["species"]}**'
             message += f'\nQuality: {land["quality"]}/{land["maxQuality"]}'
             message += f'\nBuildings: {land["buildings"]}'
-            message += f'\nGarrison: {land["garrison"]}'
+            message += f'\nGarrison: '
+            for unit in land["garrison"]:
+                print(f'unit: {unit}')
+                message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
             if land["siegeCamp"] != []:
-                message += f'\nSiege camp: {land["siegeCamp"]}'
+                message += f'\nSiege camp: '
+                for unit in land["siegeCamp"]:
+                    message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     except:
         message = 'Error while fetching user information.'
+
+    await interaction.response.send_message(message)
+
+
+@client.tree.command(name="landinfo", description="Check out the info on a certain land.")
+async def land_info(interaction: discord.Interaction, land_id: int = 0, land_name: str = ""):
+    # Fail if both fields are empty
+    if land_id == 0 and land_name == "":
+        await interaction.response.send_message("You need to put in either a land id or land name.")
+        return
+
+    land = await get_land(land_id)
+    print(f'land: {land}')
+
+    # Fail if land id is wrong/empty and land name is wrong/empty
+    if land == "":
+        land = await get_land_by_name(land_name)
+        print(f'land: {land}')
+        if land == "":
+            await interaction.response.send_message("Land not found.")
+            return
+
+    land_id = await get_land_id(land)
+    print(f'land_id: {land_id}')
+
+    # Display the land info
+    message = f'**{land["name"]} (ID: {land_id}) - {land["species"]}**'
+    message += f'\nOwner: {client.get_user(int(land["owner_id"]))} (ID: {land["owner_id"]})'
+    message += f'\nQuality: {land["quality"]}/{land["maxQuality"]}'
+    message += f'\nBuildings: {land["buildings"]}'
+    message += f'\nGarrison: '
+    for unit in land["garrison"]:
+        print(f'unit: {unit}')
+        message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
+
+    if land["siegeCamp"] != []:
+        message += f'\nSiege camp: '
+        for unit in land["siegeCamp"]:
+            message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     await interaction.response.send_message(message)
 
@@ -1105,6 +1152,28 @@ async def get_land(land_id):
     land = lands.get(str(land_id), "")
 
     return land
+
+
+async def get_land_by_name(land_name):
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    for land in lands:
+        if land["name"] == land_name:
+            return land
+
+    return ""
+
+
+async def get_land_id(query_land):
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    for land_id, land in lands.items():
+        if land == query_land:
+            return land_id
+
+    return -1
 
 
 async def get_species(species_name):
