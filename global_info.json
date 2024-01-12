@@ -73,5 +73,7 @@
         "summer": 3,
         "fall": 3,
         "winter": 3
-    }
+    },
+    "max_casualties_attackers": 0.5,
+    "max_casualties_defenders": 1
 }

@@ -1261,6 +1261,134 @@ async def get_unit(army, troop_name, user_id):
     return ""
 
 
+async def resolve_battle(attack_army, defend_army, land=""):
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    percent_casualties_attackers = 0
+    percent_casualties_defenders = 0
+    total_attackers = await get_total_troops(attack_army)
+    total_defenders = await get_total_troops(defend_army)
+
+    round = 0
+
+    message = f'__**Battle Report {land.get("name")}**__'
+    message += f'\n**Round {round}**'
+    message += f'\nAttackers:'
+    message += f'{await print_army(attack_army)}'
+    message += f'\nDefenders:'
+    message += f'{await print_army(defend_army)}'
+
+    while percent_casualties_attackers < global_info["max_casualties_attackers"] and percent_casualties_defenders < global_info["max_casualties_defenders"]:
+        attacker_ATK = 0
+        defender_ATK = 0
+        attacker_DEF = 0
+        defender_DEF = 0
+        attacker_HP = 0
+        defender_HP = 0
+
+        for unit in attack_army:
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+            attacker_ATK += (troop["ATK"] + species[global_info["current_season"]].get(
+                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * troop["amount"]
+            attacker_DEF += (troop["AP"] + species[global_info["current_season"]].get(
+                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * troop["amount"]
+            attacker_HP += (troop["HP"] + species[global_info["current_season"]].get(
+                "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * troop["amount"]
+
+        for unit in defend_army:
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+            defender_ATK += (troop["ATK"] + species[global_info["current_season"]].get(
+                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * troop["amount"]
+            defender_DEF += (troop["AP"] + species[global_info["current_season"]].get(
+                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * troop["amount"]
+            defender_HP += (troop["HP"] + species[global_info["current_season"]].get(
+                "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * troop["amount"]
+
+        if land != "":
+            for building_name in land["buildings"]:
+                building = await get_building(building_name)
+                atkbonus = building["ATKbonus"] + \
+                    building["ATKbonusPerTroop"] * total_defenders
+                atkbonus = min(atkbonus, building["maxATKbonus"])
+                defender_ATK += defbonus
+                defbonus = building["APbonus"] + \
+                    building["APbonusPerTroop"] * total_defenders
+                defbonus = min(defbonus, building["maxAPbonus"])
+                defender_DEF += defbonus
+                hpbonus = building["HPbonus"] + \
+                    building["HPbonusPerTroop"] * total_defenders
+                hpbonus = min(hpbonus, building["maxHPbonus"])
+                defender_HP += hpbonus
+
+        attacker_score = await get_battle_score(attacker_ATK)
+        defender_score = await get_battle_score(defender_ATK)
+
+        attacker_score["score"] -= defender_DEF + defender_HP
+        defender_score["score"] -= attacker_DEF + attacker_HP
+
+        for x in range(attacker_score["spite"]):
+            await remove_casualty(defend_army)
+        for x in range(defender_score["spite"]):
+            await remove_casualty(attack_army)
+        for x in range(attacker_score["score"]):
+            await remove_casualty(defend_army)
+        for x in range(defender_score["score"]):
+            await remove_casualty(attack_army)
+
+        percent_casualties_attackers = await get_total_troops(attack_army) / total_attackers
+        percent_casualties_defenders = await get_total_troops(defend_army) / total_defenders
+
+        round += 1
+        message += f'\n\n\n**Round {round}**'
+        message += f'\nAttackers:'
+        message += f'{await print_army(attack_army)}'
+        message += f'\n\nDefenders:'
+        message += f'{await print_army(defend_army)}'
+
+    return message
+
+
+async def print_army(army):
+    message = ""
+    for unit in army:
+        message += f'\n{unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
+    return message
+
+
+async def remove_casualty(army):
+    target_index = random.randint(0, len(army) - 1)
+
+    army[target_index]["amount"] -= 1
+
+    if army[target_index]["amount"] <= 0:
+        army.pop(target_index)
+
+
+async def get_total_troops(army):
+    total = 0
+
+    for unit in army:
+        total += unit["amount"]
+
+    return total
+
+
+async def get_battle_score(num):
+    score = 0
+    spite = 0
+
+    for x in range(num):
+        a = random.randint(1, 6)
+        score += a
+        if a >= 5:
+            spite += 1
+
+    return {"score": score, "spite": spite}
+
+
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
