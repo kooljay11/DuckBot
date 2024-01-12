@@ -1,8 +1,8 @@
 {
     "default": {
         "quacks": 1,
-        "quackStreak": 1,
-        "quackedToday": true,
+        "quackStreak": 0,
+        "quackedToday": false,
         "quackRank": "",
         "spentQuacks": 0,
         "quackerinos": 0,
@@ -18,8 +18,8 @@
     },
     "107886996365508608": {
         "quacks": 28,
-        "quackStreak": 1,
-        "quackedToday": true,
+        "quackStreak": 0,
+        "quackedToday": false,
         "quackRank": "Duckling",
         "spentQuacks": 5,
         "quackerinos": 151,
@@ -75,7 +75,7 @@
         "quackedToday": false,
         "quackRank": "",
         "spentQuacks": 6,
-        "quackerinos": 1167,
+        "quackerinos": 1358,
         "renown": 0,
         "liege_id": 0,
         "taxPerVassalLand": 0,

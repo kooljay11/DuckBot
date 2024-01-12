@@ -18,10 +18,12 @@ client = commands.Bot(command_prefix="/",
 # @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
-    # with open("./bot_status.txt", "r") as file:
-    #     randomresponses = file.readlines()
-    #     response = random.choice(randomresponses)
-    # await client.change_presence(activity=discord.Game(response))
+    with open("./bot_status.txt", "r") as file:
+        randomresponses = file.readlines()
+        response = random.choice(randomresponses)
+    await client.change_presence(activity=discord.CustomActivity(name=response, emoji='🦆'))
+    # Requires that you do the following for this to work: pip install discord.py>=2.3.2
+
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
 
@@ -359,7 +361,6 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
             message += f'\nBuildings: {land["buildings"]}'
             message += f'\nGarrison: '
             for unit in land["garrison"]:
-                print(f'unit: {unit}')
                 message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
             if land["siegeCamp"] != []:
@@ -381,7 +382,6 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
         return
 
     land = await get_land(land_id)
-    print(f'land: {land}')
 
     # Fail if land id is wrong/empty and land name is wrong/empty
     if land == "":
@@ -392,7 +392,6 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
             return
 
     land_id = await get_land_id(land)
-    print(f'land_id: {land_id}')
 
     # Display the land info
     message = f'**{land["name"]} (ID: {land_id}) - {land["species"]}**'
@@ -401,7 +400,6 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
     message += f'\nBuildings: {land["buildings"]}'
     message += f'\nGarrison: '
     for unit in land["garrison"]:
-        print(f'unit: {unit}')
         message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     if land["siegeCamp"] != []:
@@ -1246,7 +1244,6 @@ async def get_season(day):
 
     while True:
         for season_name, length in global_info["seasons"].items():
-            print(f'[{dayx}]: {season_name}, {length}')
             if dayx <= length:
                 return season_name
             else:
