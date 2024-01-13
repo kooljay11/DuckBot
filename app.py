@@ -136,6 +136,8 @@ async def quack(interaction: discord.Interaction):
 
             if user["species"] == "penguin":
                 message = f'{username}: noot noot!'
+            elif user_id == 712336169270116403:
+                message = f'{username} did not deserve to quack today.'
             else:
                 message = f'{username} quacked loudly.'
 
@@ -805,7 +807,8 @@ async def main():
         # Reading token from environment variable
         discord_token = os.getenv('DISCORD_BOT_TOKEN')
         if not discord_token:
-            raise ValueError("No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+            raise ValueError(
+                "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
         await client.start(discord_token)
 
 
