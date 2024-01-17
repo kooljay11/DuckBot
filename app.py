@@ -83,14 +83,288 @@ async def dailyReset():
         # If no money is left then disband all the soldiers that cant be paid
 
     # Execute the task queue
-    for task in global_info["task_queue"]:
-        # 1) siege commands
-        # 2) Resolve attack+defend battles
-        # 3) Resolve sallyout battles
-        # 4) move commands
-        # 5) Hire/upgrade troops
-        # 6) Increase building progress or build the queued building
+
+    index = 0
+
+    # Execute all the siege commands first
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task["task"] == "siege":
+            user = user_info[str(task["user_id"])]
+            land = lands.get(str(task["location_id"]), "")
+            target_land = lands.get(str(task["target_land_id"]), "")
+            unit = await get_unit(land["siegeCamp"], task["item"], task["user_id"])
+
+            # Fail if that troop isn't in that land or if there aren't as many as specified
+            if unit == "" or unit["amount"] < task["amount"]:
+                unit = await get_unit(land["garrison"], task["item"], task["user_id"])
+                if unit == "" or unit["amount"] < task["amount"]:
+                    await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+
+            # Fail if the target land is yours
+            if target_land["owner_id"] == task["user_id"]:
+                await dm(task["user_id"], 'You can\'t siege yourself.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            ally_vassals = await get_allied_vassals(task["user_id"])
+
+            # Fail if the target is the liege or vassal of your liege or your vassal
+            if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == task["user_id"]):
+                await dm(task["user_id"], 'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            # Remove the troops from the original land
+            # Add them to the siege camp on the target land
+            await dm(task["user_id"],
+                     f'{task["amount"]} {task["item"]}s were sent to siege {target_land["name"]}.')
+            global_info["task_queue"].pop(index)  # Remove this task
+        else:
+            index += 1
+
+    index = 0
+
+    # Execute each siege battle, including attack commands and garrison. Then also include the siege camp if there are any defend commands.
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task["task"] == "attack":
+            include_siege_camp = False
+            user_ids = []
+            attacker_army = []
+            defender_army = []
+
+            defend_index = 0
+
+            # Check for all other defend commands done to this target place and put them into an array
+            while defend_index < len(global_info["task_queue"]):
+                action = global_info["task_queue"][defend_index]
+                if action["target_land_id"] == task["target_land_id"] and action["task"] == "defend":
+                    user = user_info[str(action["user_id"])]
+                    land = lands.get(str(action["location_id"]), "")
+                    target_land = lands.get(str(action["target_land_id"]), "")
+
+                    unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
+
+                    # Fail if that troop isn't in that land or if there aren't as many as specified
+                    if unit == "" or unit["amount"] < action["amount"]:
+                        unit = await get_unit(land["garrison"], action["item"], action["user_id"])
+                        if unit == "" or unit["amount"] < action["amount"]:
+                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            global_info["task_queue"].pop(
+                                defend_index)  # Remove this task
+                            continue
+
+                    # Fail if they are both the same land
+                    if target_land["owner_id"] == action["user_id"]:
+                        await dm(action["user_id"], 'You don\'t need to use this command for troops in the garrison of a land being attacked.')
+                        global_info["task_queue"].pop(
+                            defend_index)  # Remove this task
+                        continue
+
+                    # Add the troops to the defender army
+                    defender_army.append(unit)
+
+                    user_ids.append(action["user_id"])
+
+                    global_info["task_queue"].pop(
+                        defend_index)  # Remove this task
+
+                    include_siege_camp = True
+                else:
+                    defend_index += 1
+
+            # Add all garrison to the defend army
+            for unit in target_land["garrison"]:
+                defender_army.append(unit)
+
+            if include_siege_camp:
+                target_land = lands.get(str(task["target_land_id"]), "")
+
+                # Add all siege camp to the attack army
+                for unit in target_land["siegeCamp"]:
+                    attacker_army.append(unit)
+
+            attack_index = 0
+
+            # Check for all other attack commands done to this target place and put them into an array
+            while attack_index < len(global_info["task_queue"]):
+                action = global_info["task_queue"][attack_index]
+                if action["target_land_id"] == task["target_land_id"] and action["task"] == "attack":
+                    user = user_info[str(action["user_id"])]
+                    land = lands.get(str(action["location_id"]), "")
+                    target_land = lands.get(str(action["target_land_id"]), "")
+
+                    unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
+
+                    # Fail if that troop isn't in that land or if there aren't as many as specified
+                    if unit == "" or unit["amount"] < action["amount"]:
+                        unit = await get_unit(land["garrison"], action["item"], action["user_id"])
+                        if unit == "" or unit["amount"] < action["amount"]:
+                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            global_info["task_queue"].pop(
+                                attack_index)  # Remove this task
+                            continue
+                    # Fail if the siege camp has already been included in the battle
+                    elif include_siege_camp and action["location_id"] == action["target_land_id"]:
+                        global_info["task_queue"].pop(
+                            attack_index)  # Remove this task
+                        continue
+
+                    # Fail if the target land is yours
+                    if target_land["owner_id"] == action["user_id"]:
+                        await dm(action["user_id"], 'You can\'t attack yourself.')
+                        global_info["task_queue"].pop(
+                            attack_index)  # Remove this task
+                        continue
+
+                    ally_vassals = await get_allied_vassals(action["user_id"])
+
+                    # Fail if the target is the liege or vassal of your liege or your vassal
+                    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == action["user_id"]):
+                        await dm(action["user_id"], 'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+                        global_info["task_queue"].pop(
+                            attack_index)  # Remove this task
+                        continue
+
+                    # Add the troops to the attacker army
+                    attacker_army.append(unit)
+
+                    user_ids.append(action["user_id"])
+
+                    global_info["task_queue"].pop(
+                        attack_index)  # Remove this task
+
+                else:
+                    attack_index += 1
+
+            # Resolve the combat
+            target_land = lands.get(str(task["target_land_id"]), "")
+            message = await resolve_battle(attacker_army, defender_army, target_land)
+
+            # DM the results to all the combatants
+            for user_id in user_ids:
+                await dm(user_id, message)
+        else:
+            index += 1
+
+    index = 0
+
+    # Execute each field battle, including sallyout commands and siege camp.
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task["task"] == "sallyout":
+            user_ids = []
+            attacker_army = []
+            defender_army = []
+
+            defend_index = 0
+
+            while defend_index < len(global_info["task_queue"]):
+                action = global_info["task_queue"][defend_index]
+                if action["target_land_id"] == task["target_land_id"] and action["task"] == "sallyout":
+                    land = lands.get(str(action["location_id"]), "")
+                    target_land = lands.get(str(action["target_land_id"]), "")
+
+                    unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
+
+                    # Fail if that troop isn't in that land or if there aren't as many as specified
+                    if unit == "" or unit["amount"] < action["amount"]:
+                        unit = await get_unit(land["garrison"], action["item"], action["user_id"])
+                        if unit == "" or unit["amount"] < action["amount"]:
+                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            global_info["task_queue"].pop(
+                                defend_index)  # Remove this task
+                            continue
+
+                    # Add the troops to the defender army
+                    defender_army.append(unit)
+
+                    user_ids.append(action["user_id"])
+
+                    global_info["task_queue"].pop(
+                        defend_index)  # Remove this task
+                else:
+                    defend_index += 1
+
+            # Add all siege camp to the attack army
+            for unit in target_land["siegeCamp"]:
+                attacker_army.append(unit)
+
+            # Resolve the combat
+            target_land = lands.get(str(task["target_land_id"]), "")
+            message = await resolve_battle(attacker_army, defender_army, target_land)
+
+            # DM the results to all the combatants
+            for user_id in user_ids:
+                await dm(user_id, message)
+        else:
+            index += 1
+
+    index = 0
+
+    # Execute all move commands
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task[""] == "move":
+            # Check if the move command is valid, including if the origin location or target location is under siege or not
+            # Remove the troops from the original land
+            # Add them to the siege camp on the target land
+            # DM the results to the player
+            # Remove this task
+
+            print()
+        else:
+            index += 1
+
+    index = 0
+
+    # Execute all hire/upgrade commands in the following order: Tier 4 upgrades → Tier 3 upgrades → Tier 2 upgrades → Hire upgrades
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        # Get the top tier upgrade troop
+        # Execute all the upgrade commands for this tier
+
+        # Check if the upgrade command is valid.
+        # Remove the money
+        # Remove the troops from the location
+        # Add the upgraded troops to the target land
+        # Dm the results to the player
+        # Remove this task
+
+        # Then go down one tier until tier 1 is finished
+
         print("")
+
+    index = 0
+
+    # Execute all hire commands
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task[""] == "hire":
+            # Check if hire command is valid
+            # Remove money
+            # Add troops to the target land
+            # DM the user the result
+            print()
+        else:
+            index += 1
+
+    index = 0
+    # 1) Siege commands
+    # 2) Resolve attack+defend battles
+    # 3) Resolve sallyout battles
+    # 4) move commands
+    # 5) Hire/upgrade troops
+    # 6) Increase building progress or build the queued building
 
     global_info["task_queue"] = []
 
@@ -771,7 +1045,7 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
         return
 
-    unit = await get_unit(land["garrison"], troop_name)
+    unit = await get_unit(land["garrison"], troop_name, user_id)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
@@ -824,7 +1098,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('You can\'t hire that troop there.')
         return
 
-    unit = await get_unit(land["garrison"], troop_name)
+    unit = await get_unit(land["garrison"], troop_name, user_id)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
@@ -947,13 +1221,6 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     # Fail if they are both the same land
     if location_id == target_land_id:
         await interaction.response.send_message('You don\'t need to use this command for troops in the garrison of a land being attacked.')
-        return
-
-    unit = await get_unit(land["garrison"], troop_name, user_id)
-
-    # Fail if that troop isn't in that land or if there aren't as many as specified
-    if unit == "" or unit["amount"] < amount:
-        await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on a defense mission.')
         return
 
     # Add the task to the queue
@@ -1384,6 +1651,16 @@ async def get_battle_score(num):
             spite += 1
 
     return {"score": score, "spite": spite}
+
+
+async def dm(user_id, message):
+    try:
+        user = client.fetch_user(int(user_id))
+    except:
+        print(f'{user_id} not found. Message: {message}')
+        return
+
+    user.send(message)
 
 
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
