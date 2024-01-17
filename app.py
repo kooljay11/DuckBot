@@ -136,8 +136,8 @@ async def quack(interaction: discord.Interaction):
 
             if user["species"] == "penguin":
                 message = f'{username}: noot noot!'
-            elif user_id == 712336169270116403:
-                message = f'{username} did not deserve to quack today.'
+            # elif user_id == 712336169270116403:
+            #     message = f'{username} did not deserve to quack today.'
             else:
                 message = f'{username} quacked loudly.'
 
