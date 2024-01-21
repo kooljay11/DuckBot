@@ -13,8 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-# @tasks.loop(minutes=60)
+# @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(minutes=60)
 # @tasks.loop(minutes=1)
 async def dailyReset():
     print('Daily reset occurring')
@@ -95,10 +95,12 @@ async def dailyReset():
             land = lands.get(str(task["location_id"]), "")
             target_land = lands.get(str(task["target_land_id"]), "")
             unit = await get_unit(land["siegeCamp"], task["item"], task["user_id"])
+            army = land["siegeCamp"]
 
             # Fail if that troop isn't in that land or if there aren't as many as specified
             if unit == "" or unit["amount"] < task["amount"]:
                 unit = await get_unit(land["garrison"], task["item"], task["user_id"])
+                army = land["garrison"]
                 if unit == "" or unit["amount"] < task["amount"]:
                     await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
                     global_info["task_queue"].pop(index)  # Remove this task
@@ -119,7 +121,11 @@ async def dailyReset():
                 continue
 
             # Remove the troops from the original land
+            moved_unit = await remove_unit(army, unit, task["amount"])
+
             # Add them to the siege camp on the target land
+            await add_unit(target_land["siegeCamp"], moved_unit)
+
             await dm(task["user_id"],
                      f'{task["amount"]} {task["item"]}s were sent to siege {target_land["name"]}.')
             global_info["task_queue"].pop(index)  # Remove this task
@@ -313,13 +319,41 @@ async def dailyReset():
         task = global_info["task_queue"][index]
 
         if task[""] == "move":
+            user = user_info[str(task["user_id"])]
+            land = lands.get(str(task["location_id"]), "")
+            target_land = lands.get(str(task["target_land_id"]), "")
+            unit = await get_unit(land["siegeCamp"], task["item"], task["user_id"])
+
+            # Fail if that troop isn't in that land or if there aren't as many as specified
+            if unit == "" or unit["amount"] < task["amount"]:
+                unit = await get_unit(land["garrison"], task["item"], task["user_id"])
+                if unit == "" or unit["amount"] < task["amount"]:
+                    await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+                # Fail if they are both the same land
+                elif task["location_id"] == task["target_land_id"]:
+                    await dm(task["user_id"], 'The developers stopped you from taking a useless action.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+
+            ally_vassals = await get_allied_vassals(user_id)
+
+            # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
+            if target_land["owner_id"] != user_id:
+                if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
+                    await dm(task["user_id"], 'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+
             # Check if the move command is valid, including if the origin location or target location is under siege or not
             # Remove the troops from the original land
-            # Add them to the siege camp on the target land
-            # DM the results to the player
-            # Remove this task
+            # Add them to the garrison on the target land
 
-            print()
+            # DM the results to the player
+            await dm(task["user_id"], f'{task["amount"]} {task["item"]}s were sent to {target_land["name"]}\'s garrison.')
+
+            global_info["task_queue"].pop(index)  # Remove this task
         else:
             index += 1
 
@@ -1388,6 +1422,27 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     await interaction.response.send_message(message)
 
 
+async def remove_unit(army, unit, amount):
+    moved_unit = deepcopy(unit)
+    moved_unit["amount"] = amount
+    unit["amount"] -= amount
+    if unit["amount"] == 0:
+        army.remove(unit)
+
+    return moved_unit
+
+
+async def add_unit(army, unit, amount=-1):
+    target_unit = await get_unit(army, unit["troop_name"], unit["user_id"])
+    if target_unit == "":
+        army.append(unit)
+    else:
+        if amount < 0:
+            target_unit["amount"] += unit["amount"]
+        else:
+            target_unit["amount"] += amount
+
+
 async def get_allied_vassals(user_id):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
@@ -1655,12 +1710,11 @@ async def get_battle_score(num):
 
 async def dm(user_id, message):
     try:
-        user = client.fetch_user(int(user_id))
+        user = await client.fetch_user(int(user_id))
+        await user.send(message)
     except:
         print(f'{user_id} not found. Message: {message}')
         return
-
-    user.send(message)
 
 
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):

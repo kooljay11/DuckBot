@@ -16,19 +16,13 @@
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
-        "garrison": [
-            {
-                "troop_name": "Duck Militia",
-                "amount": 10,
-                "user_id": 107886996365508608
-            }
-        ],
+        "garrison": [],
         "siegeCamp": []
     },
     "2": {
         "name": "Climate Change",
         "owner_id": 479504133993529344,
-        "quality": 6,
+        "quality": 1,
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
@@ -43,6 +37,12 @@
         "species": "penguin",
         "buildings": [],
         "garrison": [],
-        "siegeCamp": []
+        "siegeCamp": [
+            {
+                "troop_name": "Duck Militia",
+                "amount": 10,
+                "user_id": 107886996365508608
+            }
+        ]
     }
 }
