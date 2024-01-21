@@ -120,6 +120,12 @@ async def dailyReset():
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
+            # Fail if the your land is already surrounded
+            if await is_surrounded(land):
+                await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
             # Remove the troops from the original land
             moved_unit = await remove_unit(army, unit, task["amount"])
 
@@ -170,6 +176,13 @@ async def dailyReset():
                         await dm(action["user_id"], 'You don\'t need to use this command for troops in the garrison of a land being attacked.')
                         global_info["task_queue"].pop(
                             defend_index)  # Remove this task
+                        continue
+
+                    # Fail if the your land is already surrounded
+                    if await is_surrounded(land):
+                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        global_info["task_queue"].pop(
+                            index)  # Remove this task
                         continue
 
                     # Add the troops to the defender army
@@ -237,6 +250,13 @@ async def dailyReset():
                             attack_index)  # Remove this task
                         continue
 
+                    # Fail if the your land is already surrounded
+                    if await is_surrounded(land):
+                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        global_info["task_queue"].pop(
+                            index)  # Remove this task
+                        continue
+
                     # Add the troops to the attacker army
                     attacker_army.append(unit)
 
@@ -288,6 +308,13 @@ async def dailyReset():
                                 defend_index)  # Remove this task
                             continue
 
+                    # Fail if the your land is already surrounded
+                    if await is_surrounded(land) and action["location_id"] != action["target_land_id"]:
+                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        global_info["task_queue"].pop(
+                            index)  # Remove this task
+                        continue
+
                     # Add the troops to the defender army
                     defender_army.append(unit)
 
@@ -323,10 +350,12 @@ async def dailyReset():
             land = lands.get(str(task["location_id"]), "")
             target_land = lands.get(str(task["target_land_id"]), "")
             unit = await get_unit(land["siegeCamp"], task["item"], task["user_id"])
+            army = land["siegeCamp"]
 
             # Fail if that troop isn't in that land or if there aren't as many as specified
             if unit == "" or unit["amount"] < task["amount"]:
                 unit = await get_unit(land["garrison"], task["item"], task["user_id"])
+                army = land["garrison"]
                 if unit == "" or unit["amount"] < task["amount"]:
                     await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
                     global_info["task_queue"].pop(index)  # Remove this task
@@ -346,9 +375,23 @@ async def dailyReset():
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
-            # Check if the move command is valid, including if the origin location or target location is under siege or not
+            # Fail if the your land is already surrounded
+            if await is_surrounded(land):
+                await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            # Fail if the target land is already surrounded unless taking troops out of the siege camp
+            if await is_surrounded(target_land) and army != land["siegeCamp"]:
+                await dm(task["user_id"], f'You cannot move troops into the garrison of {target_land["name"]} because it is fully surrounded.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
             # Remove the troops from the original land
+            moved_unit = await remove_unit(army, unit, task["amount"])
+
             # Add them to the garrison on the target land
+            await add_unit(target_land["siegeCamp"], moved_unit)
 
             # DM the results to the player
             await dm(task["user_id"], f'{task["amount"]} {task["item"]}s were sent to {target_land["name"]}\'s garrison.')
@@ -1208,6 +1251,11 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message(f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
         return
 
+    # Fail if the your land is already surrounded
+    if await is_surrounded(land):
+        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
 
@@ -1255,6 +1303,11 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     # Fail if they are both the same land
     if location_id == target_land_id:
         await interaction.response.send_message('You don\'t need to use this command for troops in the garrison of a land being attacked.')
+        return
+
+    # Fail if the your land is already surrounded
+    if await is_surrounded(land):
+        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     # Add the task to the queue
@@ -1313,6 +1366,11 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
         await interaction.response.send_message(f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
         return
 
+    # Fail if the your land is already surrounded
+    if await is_surrounded(land):
+        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "siege", troop_name, location_id, amount, target_land=target_land_id)
 
@@ -1356,6 +1414,11 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
         if unit == "" or unit["amount"] < amount:
             await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
             return
+
+    # Fail if the your land is already surrounded
+    if await is_surrounded(land) and land != target_land:
+        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
 
     # Add the task to the queue
     await add_to_queue(user_id, "sallyout", troop_name, location_id, amount, target_land=target_land_id)
@@ -1414,12 +1477,50 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
             await interaction.response.send_message(f'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
             return
 
+    # Fail if the your land is already surrounded
+    if await is_surrounded(land):
+        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
+
+    # Fail if the target land is already surrounded
+    if await is_surrounded(target_land):
+        await interaction.response.send_message(f'You cannot move troops into the garrrison of {target_land["name"]} because it is fully surrounded.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "move", troop_name, location_id, amount, target_land=target_land_id)
 
     message = f'{amount} {troop_name}s were sent to {target_land["name"]}\'s garrison.'
 
     await interaction.response.send_message(message)
+
+
+async def is_surrounded(land):
+    defender_score = 0
+    sieger_score = 0
+
+    num_defenders = 0
+    num_siegers = 0
+
+    # 1 troop = +1 score
+    for unit in land["garrison"]:
+        num_defenders += unit["amount"]
+    for unit in land["siegeCamp"]:
+        num_siegers += unit["amount"]
+
+    defender_score += num_defenders
+    sieger_score += num_siegers
+
+    # HP and DEF bonuses of buildings increase the defender score
+    for building_name in land["buildings"]:
+        building = await get_building(building_name)
+        defender_score += min(building["maxAPbonus"], building["APbonus"] + building["APbonusPerTroop"] * num_defenders) + min(
+            building["maxHPbonus"], building["HPbonus"] + building["HPbonusPerTroop"] * num_defenders)
+
+    if sieger_score > defender_score:
+        return True
+    else:
+        return False
 
 
 async def remove_unit(army, unit, amount):
