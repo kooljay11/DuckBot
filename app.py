@@ -182,7 +182,7 @@ async def dailyReset():
                     if await is_surrounded(land):
                         await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
-                            index)  # Remove this task
+                            defend_index)  # Remove this task
                         continue
 
                     # Add the troops to the defender army
@@ -257,7 +257,7 @@ async def dailyReset():
                     if await is_surrounded(land) and land != target_land:
                         await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
-                            index)  # Remove this task
+                            attack_index)  # Remove this task
                         continue
 
                     # Add the troops to the attacker army
@@ -321,7 +321,7 @@ async def dailyReset():
                     if await is_surrounded(land) and action["location_id"] != action["target_land_id"]:
                         await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
-                            index)  # Remove this task
+                            defend_index)  # Remove this task
                         continue
 
                     # Add the troops to the defender army
@@ -417,19 +417,75 @@ async def dailyReset():
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
-        # Get the top tier upgrade troop
-        # Execute all the upgrade commands for this tier
+        if task["task"] == "upgrade":
+            top_tier = 1
 
-        # Check if the upgrade command is valid.
-        # Remove the money
-        # Remove the troops from the location
-        # Add the upgraded troops to the target land
-        # Dm the results to the player
-        # Remove this task
+            # Get the top tier upgrade troop
+            for action in global_info["task_queue"]:
+                if action["task"] == "upgrade":
+                    troop = await get_troop(action["item"])
 
-        # Then go down one tier until tier 1 is finished
+                    if troop["tier"] > top_tier:
+                        top_tier = troop["tier"]
 
-        print("")
+            # Execute all the upgrade commands going from top to bottom tiers
+            while top_tier > 0:
+                troop_index = 0
+                while troop_index < len(global_info["task_queue"]):
+                    action = global_info["task_queue"][troop_index]
+                    troop = await get_troop(action["item"])
+
+                    if action["task"] == "upgrade" and troop["tier"] == top_tier:
+                        user = user_info[str(action["user_id"])]
+                        land = lands.get(str(action["location_id"]), "")
+                        # Fail if the specified land doesn't belong to that player
+                        if action["location_id"] not in user["land_ids"]:
+                            await dm(action["user_id"], 'That land doesn\'t belong to you.')
+                            global_info["task_queue"].pop(
+                                troop_index)  # Remove this task
+                            continue
+
+                        unit = await get_unit(land["garrison"], action["item"], action["user_id"])
+
+                        # Fail if that troop isn't in that land or if there aren't as many as specified
+                        if unit == "" or unit["amount"] < action["amount"]:
+                            await dm(action["user_id"], f'You don\'t have enough of that troop to upgrade {action["amount"]} of them.')
+                            global_info["task_queue"].pop(
+                                troop_index)  # Remove this task
+                            continue
+
+                        new_troop = await get_troop(troop["upgradesTo"])
+                        cost = new_troop["cost"] * action["amount"]
+
+                        # Fail if not enough money
+                        if int(user["quackerinos"]) < cost:
+                            await dm(action["user_id"], "You don't have enough quackerinos for that.")
+                            global_info["task_queue"].pop(
+                                troop_index)  # Remove this task
+                            continue
+
+                        # Remove the money
+                        user["quackerinos"] -= cost
+
+                        # Remove the troops from the garrison
+                        await remove_unit(land["garrison"], unit, action["amount"])
+
+                        # Add the upgraded troop to the garrison
+                        new_unit = {
+                            "troop_name": troop["upgradesTo"], "amount": action["amount"], "user_id": action["user_id"]}
+                        await add_unit(land["garrison"], new_unit)
+
+                        # DM the results to the player
+                        await dm(action["user_id"], f'{action["amount"]} {action["item"]}s were upgraded to {troop["upgradesTo"]}s at {land["name"]}\'s garrison.')
+
+                        global_info["task_queue"].pop(
+                            troop_index)  # Remove this task
+
+                    else:
+                        troop_index += 1
+                top_tier -= 1
+        else:
+            index += 1
 
     index = 0
 
@@ -443,6 +499,7 @@ async def dailyReset():
             # Add troops to the target land
             # DM the user the result
             print()
+            index += 1
         else:
             index += 1
 
@@ -1128,9 +1185,9 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
         await interaction.response.send_message('That land doesn\'t belong to you.')
         return
 
-    # Fail if that troop requires upgrading and can't be hired directly
-    if bool(troop["fromUpgradeOnly"]):
-        await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
+    # Fail if that troop can't be upgraded
+    if troop["upgradesTo"] == "":
+        await interaction.response.send_message('That troop can\'t be upgraded.')
         return
 
     unit = await get_unit(land["garrison"], troop_name, user_id)

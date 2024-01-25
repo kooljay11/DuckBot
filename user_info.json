@@ -14,7 +14,8 @@
         "mischief": false,
         "species": "",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "107886996365508608": {
         "quacks": 28,
@@ -22,7 +23,7 @@
         "quackedToday": false,
         "quackRank": "Duckling",
         "spentQuacks": 5,
-        "quackerinos": 151,
+        "quackerinos": 135,
         "renown": 0,
         "liege_id": 479504133993529344,
         "taxPerVassalLand": 0,
@@ -33,7 +34,8 @@
         "mischief": false,
         "species": "duck",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "634175591033208844": {
         "quacks": 6,
@@ -50,7 +52,8 @@
         "mischief": false,
         "species": "",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "693257736867020870": {
         "quacks": 6,
@@ -67,7 +70,8 @@
         "mischief": false,
         "species": "",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "479504133993529344": {
         "quacks": 6,
@@ -86,7 +90,8 @@
         "mischief": false,
         "species": "duck",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "692095041635614750": {
         "quacks": 6,
@@ -105,7 +110,8 @@
         "mischief": false,
         "species": "penguin",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "712336169270116403": {
         "quacks": 6,
@@ -122,7 +128,8 @@
         "mischief": false,
         "species": "",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     },
     "542494071965614091": {
         "quacks": 6,
@@ -139,6 +146,7 @@
         "mischief": false,
         "species": "",
         "party": [],
-        "siege_location_ids": []
+        "siege_location_ids": [],
+        "vassal_waitlist_ids": []
     }
 }

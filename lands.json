@@ -21,7 +21,12 @@
         "garrison": [
             {
                 "troop_name": "Duck Militia",
-                "amount": 10,
+                "amount": 9,
+                "user_id": 107886996365508608
+            },
+            {
+                "troop_name": "Duck Guard",
+                "amount": 1,
                 "user_id": 107886996365508608
             }
         ],
