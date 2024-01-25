@@ -151,6 +151,7 @@ async def dailyReset():
             defender_army = []
 
             defend_index = 0
+            target_land = lands.get(str(task["target_land_id"]), "")
 
             # Check for all other defend commands done to this target place and put them into an array
             while defend_index < len(global_info["task_queue"]):
@@ -158,7 +159,6 @@ async def dailyReset():
                 if action["target_land_id"] == task["target_land_id"] and action["task"] == "defend":
                     user = user_info[str(action["user_id"])]
                     land = lands.get(str(action["location_id"]), "")
-                    target_land = lands.get(str(action["target_land_id"]), "")
 
                     unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
 
@@ -186,9 +186,10 @@ async def dailyReset():
                         continue
 
                     # Add the troops to the defender army
-                    defender_army.append(unit)
+                    defender_army.append(
+                        {"unit": unit, "amount": action["amount"]})
 
-                    user_ids.append(action["user_id"])
+                    # user_ids.append(action["user_id"])
 
                     global_info["task_queue"].pop(
                         defend_index)  # Remove this task
@@ -199,24 +200,26 @@ async def dailyReset():
 
             # Add all garrison to the defend army
             for unit in target_land["garrison"]:
-                defender_army.append(unit)
+                defender_army.append({"unit": unit, "amount": unit["amount"]})
 
             if include_siege_camp:
                 target_land = lands.get(str(task["target_land_id"]), "")
 
                 # Add all siege camp to the attack army
                 for unit in target_land["siegeCamp"]:
-                    attacker_army.append(unit)
+                    attacker_army.append(
+                        {"unit": unit, "amount": unit["amount"]})
 
             attack_index = 0
 
             # Check for all other attack commands done to this target place and put them into an array
             while attack_index < len(global_info["task_queue"]):
                 action = global_info["task_queue"][attack_index]
+                print(f'action: {action}')
                 if action["target_land_id"] == task["target_land_id"] and action["task"] == "attack":
                     user = user_info[str(action["user_id"])]
                     land = lands.get(str(action["location_id"]), "")
-                    target_land = lands.get(str(action["target_land_id"]), "")
+                    # target_land = lands.get(str(action["target_land_id"]), "")
 
                     unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
 
@@ -251,16 +254,17 @@ async def dailyReset():
                         continue
 
                     # Fail if the your land is already surrounded
-                    if await is_surrounded(land):
+                    if await is_surrounded(land) and land != target_land:
                         await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
                             index)  # Remove this task
                         continue
 
                     # Add the troops to the attacker army
-                    attacker_army.append(unit)
+                    attacker_army.append(
+                        {"unit": unit, "amount": action["amount"]})
 
-                    user_ids.append(action["user_id"])
+                    # user_ids.append(action["user_id"])
 
                     global_info["task_queue"].pop(
                         attack_index)  # Remove this task
@@ -268,8 +272,17 @@ async def dailyReset():
                 else:
                     attack_index += 1
 
+            print(f'user_ids: {user_ids}')
+            print(f'attacker_army: {attacker_army}')
+            print(f'defender_army: {defender_army}')
+
+            # Get the list of people to alert
+            for unit in attacker_army:
+                user_ids.append(unit["unit"]["user_id"])
+            for unit in defender_army:
+                user_ids.append(unit["unit"]["user_id"])
+
             # Resolve the combat
-            target_land = lands.get(str(task["target_land_id"]), "")
             message = await resolve_battle(attacker_army, defender_army, target_land)
 
             # DM the results to all the combatants
@@ -1252,7 +1265,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         return
 
     # Fail if the your land is already surrounded
-    if await is_surrounded(land):
+    if await is_surrounded(land) and land != target_land:
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
@@ -1692,74 +1705,108 @@ async def resolve_battle(attack_army, defend_army, land=""):
 
     round = 0
 
-    message = f'__**Battle Report {land.get("name")}**__'
+    message = f'__**Battle Report @ {land.get("name")}**__'
     message += f'\n**Round {round}**'
     message += f'\nAttackers:'
     message += f'{await print_army(attack_army)}'
     message += f'\nDefenders:'
     message += f'{await print_army(defend_army)}'
 
+    attacker_HP = 0
+    defender_HP = 0
+    print(f'pre-message: {message}')
+    for unit in attack_army:
+        troop = await get_troop(unit["unit"]["troop_name"])
+        species = await get_species(troop["species"])
+        attacker_HP += (troop["HP"] + species[global_info["current_season"]].get(
+            "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+
+    for unit in defend_army:
+        troop = await get_troop(unit["unit"]["troop_name"])
+        species = await get_species(troop["species"])
+        defender_HP += (troop["HP"] + species[global_info["current_season"]].get(
+            "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+
+    if land != "":
+        for building_name in land["buildings"]:
+            building = await get_building(building_name)
+            hpbonus = building["HPbonus"] + \
+                building["HPbonusPerTroop"] * total_defenders
+            hpbonus = min(hpbonus, building["maxHPbonus"])
+            defender_HP += hpbonus
+
     while percent_casualties_attackers < global_info["max_casualties_attackers"] and percent_casualties_defenders < global_info["max_casualties_defenders"]:
+        updated_total_attackers = await get_total_troops(attack_army)
+        updated_total_defenders = await get_total_troops(defend_army)
         attacker_ATK = 0
         defender_ATK = 0
         attacker_DEF = 0
         defender_DEF = 0
-        attacker_HP = 0
-        defender_HP = 0
 
         for unit in attack_army:
-            troop = await get_troop(unit["troop_name"])
+            troop = await get_troop(unit["unit"]["troop_name"])
             species = await get_species(troop["species"])
-            attacker_ATK += (troop["ATK"] + species[global_info["current_season"]].get(
-                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * troop["amount"]
+            attacker_ATK += int(troop["ATK"] + species[global_info["current_season"]].get(
+                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * unit["amount"]
             attacker_DEF += (troop["AP"] + species[global_info["current_season"]].get(
-                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * troop["amount"]
-            attacker_HP += (troop["HP"] + species[global_info["current_season"]].get(
-                "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * troop["amount"]
+                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * unit["amount"]
+            # attacker_HP += (troop["HP"] + species[global_info["current_season"]].get("bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
 
         for unit in defend_army:
-            troop = await get_troop(unit["troop_name"])
+            troop = await get_troop(unit["unit"]["troop_name"])
             species = await get_species(troop["species"])
             defender_ATK += (troop["ATK"] + species[global_info["current_season"]].get(
-                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * troop["amount"]
+                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * unit["amount"]
             defender_DEF += (troop["AP"] + species[global_info["current_season"]].get(
-                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * troop["amount"]
-            defender_HP += (troop["HP"] + species[global_info["current_season"]].get(
-                "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * troop["amount"]
+                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * unit["amount"]
+            # defender_HP += (troop["HP"] + species[global_info["current_season"]].get("bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
 
         if land != "":
             for building_name in land["buildings"]:
                 building = await get_building(building_name)
                 atkbonus = building["ATKbonus"] + \
-                    building["ATKbonusPerTroop"] * total_defenders
+                    building["ATKbonusPerTroop"] * updated_total_defenders
                 atkbonus = min(atkbonus, building["maxATKbonus"])
-                defender_ATK += defbonus
+                defender_ATK += atkbonus
                 defbonus = building["APbonus"] + \
-                    building["APbonusPerTroop"] * total_defenders
+                    building["APbonusPerTroop"] * updated_total_defenders
                 defbonus = min(defbonus, building["maxAPbonus"])
                 defender_DEF += defbonus
-                hpbonus = building["HPbonus"] + \
-                    building["HPbonusPerTroop"] * total_defenders
-                hpbonus = min(hpbonus, building["maxHPbonus"])
-                defender_HP += hpbonus
+                # hpbonus = building["HPbonus"] + building["HPbonusPerTroop"] * total_defenders
+                # hpbonus = min(hpbonus, building["maxHPbonus"])
+                # defender_HP += hpbonus
 
         attacker_score = await get_battle_score(attacker_ATK)
         defender_score = await get_battle_score(defender_ATK)
 
-        attacker_score["score"] -= defender_DEF + defender_HP
-        defender_score["score"] -= attacker_DEF + attacker_HP
+        # attacker_score["score"] -= defender_DEF + defender_HP
+        # defender_score["score"] -= attacker_DEF + attacker_HP
+        # print(f'attacker_score["spite"]: {attacker_score["spite"]}')
+        # print(f'defender_score["spite"]: {defender_score["spite"]}')
+        attack_spite = deepcopy(attacker_score["spite"])
+        defend_spite = deepcopy(defender_score["spite"])
+        attacker_score["spite"] -= defender_DEF + defender_HP
+        defender_score["spite"] -= attacker_DEF + attacker_HP
+        defender_HP -= attack_spite
+        defender_HP = max(0, defender_HP)
+        attacker_HP -= defend_spite
+        attacker_HP = max(0, attacker_HP)
+        # print(f'attacker_score["spite"]: {attacker_score["spite"]}')
+        # print(f'defender_score["spite"]: {defender_score["spite"]}')
+        # print(f'defender_HP: {defender_HP}')
+        # print(f'attacker_HP: {attacker_HP}')
 
         for x in range(attacker_score["spite"]):
             await remove_casualty(defend_army)
         for x in range(defender_score["spite"]):
             await remove_casualty(attack_army)
-        for x in range(attacker_score["score"]):
-            await remove_casualty(defend_army)
-        for x in range(defender_score["score"]):
-            await remove_casualty(attack_army)
+        # for x in range(attacker_score["score"]):
+        #     await remove_casualty(defend_army)
+        # for x in range(defender_score["score"]):
+        #     await remove_casualty(attack_army)
 
-        percent_casualties_attackers = await get_total_troops(attack_army) / total_attackers
-        percent_casualties_defenders = await get_total_troops(defend_army) / total_defenders
+        percent_casualties_attackers = 1 - await get_total_troops(attack_army) / total_attackers
+        percent_casualties_defenders = 1 - await get_total_troops(defend_army) / total_defenders
 
         round += 1
         message += f'\n\n\n**Round {round}**'
@@ -1771,27 +1818,31 @@ async def resolve_battle(attack_army, defend_army, land=""):
     return message
 
 
-async def print_army(army):
+async def print_army(army_collection):
     message = ""
-    for unit in army:
-        message += f'\n{unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
+    for company in army_collection:
+        message += f'\n{company["amount"]} {company["unit"]["troop_name"]} ({client.get_user(int(company["unit"]["user_id"]))})'
     return message
 
 
-async def remove_casualty(army):
-    target_index = random.randint(0, len(army) - 1)
+async def remove_casualty(army_collection):
+    try:
+        target_index = random.randint(0, len(army_collection) - 1)
+    except:
+        return
 
-    army[target_index]["amount"] -= 1
+    army_collection[target_index]["amount"] -= 1
+    army_collection[target_index]["unit"]["amount"] -= 1
 
-    if army[target_index]["amount"] <= 0:
-        army.pop(target_index)
+    if army_collection[target_index]["amount"] <= 0:
+        army_collection.pop(target_index)
 
 
-async def get_total_troops(army):
+async def get_total_troops(army_collection):
     total = 0
 
-    for unit in army:
-        total += unit["amount"]
+    for company in army_collection:
+        total += company["amount"]
 
     return total
 

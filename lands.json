@@ -21,7 +21,7 @@
         "garrison": [
             {
                 "troop_name": "Duck Militia",
-                "amount": 1,
+                "amount": 0,
                 "user_id": 107886996365508608
             }
         ],
@@ -29,14 +29,14 @@
             {
                 "troop_name": "Duck Militia",
                 "amount": 10,
-                "user_id": 107886996365508608
+                "user_id": 692095041635614750
             }
         ]
     },
     "2": {
         "name": "Climate Change",
         "owner_id": 479504133993529344,
-        "quality": 1,
+        "quality": 0,
         "maxQuality": 20,
         "species": "duck",
         "buildings": [],
@@ -45,18 +45,24 @@
     },
     "3": {
         "name": "Peoples Republic of Antarctica",
-        "owner_id": 692095041635614750,
+        "owner_id": 693257736867020870,
         "quality": 0,
         "maxQuality": 20,
         "species": "penguin",
         "buildings": [
             "keep"
         ],
-        "garrison": [],
+        "garrison": [
+            {
+                "troop_name": "Duck Militia",
+                "amount": 30,
+                "user_id": 693257736867020870
+            }
+        ],
         "siegeCamp": [
             {
                 "troop_name": "Duck Militia",
-                "amount": 10,
+                "amount": 62,
                 "user_id": 107886996365508608
             }
         ]

@@ -23,6 +23,8 @@
         "enabled": true,
         "HPbonusPerTroop": 1,
         "maxHPbonus": 30,
+        "ATKbonusPerTroop": 1,
+        "maxATKbonus": 30,
         "cost": 100,
         "upgradesTo": "castle",
         "constructionTime": 10
