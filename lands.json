@@ -21,7 +21,7 @@
         "garrison": [
             {
                 "troop_name": "Duck Militia",
-                "amount": 0,
+                "amount": 10,
                 "user_id": 107886996365508608
             }
         ],
@@ -41,7 +41,13 @@
         "species": "duck",
         "buildings": [],
         "garrison": [],
-        "siegeCamp": []
+        "siegeCamp": [
+            {
+                "troop_name": "Duck Militia",
+                "amount": 10,
+                "user_id": 692095041635614750
+            }
+        ]
     },
     "3": {
         "name": "Peoples Republic of Antarctica",

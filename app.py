@@ -215,7 +215,7 @@ async def dailyReset():
             # Check for all other attack commands done to this target place and put them into an array
             while attack_index < len(global_info["task_queue"]):
                 action = global_info["task_queue"][attack_index]
-                print(f'action: {action}')
+
                 if action["target_land_id"] == task["target_land_id"] and action["task"] == "attack":
                     user = user_info[str(action["user_id"])]
                     land = lands.get(str(action["location_id"]), "")
@@ -272,10 +272,6 @@ async def dailyReset():
                 else:
                     attack_index += 1
 
-            print(f'user_ids: {user_ids}')
-            print(f'attacker_army: {attacker_army}')
-            print(f'defender_army: {defender_army}')
-
             # Get the list of people to alert
             for unit in attacker_army:
                 user_ids.append(unit["unit"]["user_id"])
@@ -329,7 +325,8 @@ async def dailyReset():
                         continue
 
                     # Add the troops to the defender army
-                    defender_army.append(unit)
+                    defender_army.append(
+                        {"unit": unit, "amount": action["amount"]})
 
                     user_ids.append(action["user_id"])
 
@@ -340,7 +337,8 @@ async def dailyReset():
 
             # Add all siege camp to the attack army
             for unit in target_land["siegeCamp"]:
-                attacker_army.append(unit)
+                attacker_army.append(
+                    {"unit": unit, "amount": unit["amount"]})
 
             # Resolve the combat
             target_land = lands.get(str(task["target_land_id"]), "")
@@ -358,7 +356,7 @@ async def dailyReset():
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
-        if task[""] == "move":
+        if task["task"] == "move":
             user = user_info[str(task["user_id"])]
             land = lands.get(str(task["location_id"]), "")
             target_land = lands.get(str(task["target_land_id"]), "")
@@ -379,10 +377,10 @@ async def dailyReset():
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
-            ally_vassals = await get_allied_vassals(user_id)
+            ally_vassals = await get_allied_vassals(task["user_id"])
 
             # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
-            if target_land["owner_id"] != user_id:
+            if target_land["owner_id"] != task["user_id"]:
                 if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
                     await dm(task["user_id"], 'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
                     global_info["task_queue"].pop(index)  # Remove this task
@@ -439,7 +437,7 @@ async def dailyReset():
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
-        if task[""] == "hire":
+        if task["task"] == "hire":
             # Check if hire command is valid
             # Remove money
             # Add troops to the target land
@@ -1565,7 +1563,7 @@ async def get_allied_vassals(user_id):
     allies = []
 
     for ally_id, ally in user_info.items():
-        if user["liege_id"] == ally["liege_id"]:
+        if user["liege_id"] == ally["liege_id"] or user["liege_id"] == ally_id or ally["liege_id"] == user_id:
             allies.append(ally_id)
 
     return allies
@@ -1714,7 +1712,7 @@ async def resolve_battle(attack_army, defend_army, land=""):
 
     attacker_HP = 0
     defender_HP = 0
-    print(f'pre-message: {message}')
+
     for unit in attack_army:
         troop = await get_troop(unit["unit"]["troop_name"])
         species = await get_species(troop["species"])
