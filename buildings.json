@@ -36,6 +36,7 @@
         "ATKbonusPerTroop": 1,
         "maxATKbonus": 100,
         "cost": 1670,
+        "fromUpgradeOnly": true,
         "upgradesTo": "castle",
         "demolishedTo": "watchtower",
         "constructionTime": 14
@@ -47,6 +48,7 @@
         "ATKbonusPerTroop": 1,
         "maxATKbonus": 300,
         "cost": 3150,
+        "fromUpgradeOnly": true,
         "upgradesTo": "fortress",
         "demolishedTo": "keep",
         "constructionTime": 30
@@ -58,6 +60,7 @@
         "ATKbonusPerTroop": 1,
         "maxATKbonus": 1000,
         "cost": 5650,
+        "fromUpgradeOnly": true,
         "demolishedTo": "castle",
         "constructionTime": 60
     },

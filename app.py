@@ -494,24 +494,133 @@ async def dailyReset():
         task = global_info["task_queue"][index]
 
         if task["task"] == "hire":
-            # Check if hire command is valid
-            # Remove money
-            # Add troops to the target land
-            # DM the user the result
-            print()
-            index += 1
+            user = user_info[str(task["user_id"])]
+            troop = await get_troop(task["item"])
+            land = lands.get(str(task["location_id"]), "")
+
+            # Fail if the specified land doesn't belong to that player
+            if task["location_id"] not in user["land_ids"]:
+                await dm(task["user_id"], 'That land doesn\'t belong to you.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            cost = troop["cost"] * task["amount"]
+
+            # Fail if not enough money
+            if int(user["quackerinos"]) < cost:
+                await dm(task["user_id"], "You don't have enough quackerinos for that.")
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            # Remove the money
+            user["quackerinos"] -= cost
+
+            # Add the troops to the garrison
+            new_unit = {
+                "troop_name": task["item"], "amount": task["amount"], "user_id": task["user_id"]}
+            await add_unit(land["garrison"], new_unit)
+
+            # DM the results to the player
+            await dm(task["user_id"], f'You hired {task["amount"]} {task["item"]}s at {land["name"]}\'s garrison.')
+
+            global_info["task_queue"].pop(index)  # Remove this task
         else:
             index += 1
 
     index = 0
+
+    while index < len(global_info["task_queue"]):
+        task = global_info["task_queue"][index]
+
+        if task["task"] == "build":
+            user = user_info[str(task["user_id"])]
+            land = lands.get(str(task["location_id"]), "")
+            building = await get_building(task["item"])
+
+            # Fail if the specified land doesn't belong to that player
+            if task["location_id"] not in user["land_ids"]:
+                await dm(task["user_id"], 'That land doesn\'t belong to you.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            # Fail if the building has already been built on that land
+            if task["item"] in land["buildings"]:
+                await dm(task["user_id"], 'That building has already been built there.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
+
+            # Fail if the building has to be upgraded to and is missing their requirement
+            if bool(building["fromUpgradeOnly"]):
+                requirement = False
+                for building_x_name in land["buildings"]:
+                    building_x = await get_building(building_x_name)
+                    if building_x["upgradesTo"] == task["item"]:
+                        requirement = True
+                        break
+                if not requirement:
+                    await dm(task["user_id"], 'That building needs to be built by upgrading a lower tier one.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+
+            # Fail if there is an upper tier building of this already
+            upgradesTo = deepcopy(building["upgradesTo"])
+            skip = False
+            while upgradesTo != "":
+                if upgradesTo in land["buildings"]:
+                    await dm(task["user_id"], 'There is already an upper tier equivalent of that building in that location.')
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    skip = True
+                    break
+                else:
+                    next_building = await get_building(building["upgradesTo"])
+                    upgradesTo = deepcopy(next_building["upgradesTo"])
+            if skip:
+                continue
+
+            # Only make the user pay at the beginning of the construction
+            if task["time"] == building["constructionTime"]:
+                cost = building["cost"]
+
+                # Fail if not enough money
+                if int(user["quackerinos"]) < cost:
+                    await dm(task["user_id"], "You don't have enough quackerinos for that.")
+                    global_info["task_queue"].pop(index)  # Remove this task
+                    continue
+
+                # Remove the money
+                user["quackerinos"] -= cost
+
+                await dm(task["user_id"], f'The labourers have started building {task["item"]} at {land["name"]}, costing {cost}')
+
+            task["time"] -= 1
+
+            if task["time"] <= 0:
+                # Build the new building
+                land["buildings"].append(task["item"])
+
+                # Destroy the lower tier one if applicable
+                if bool(building["fromUpgradeOnly"]):
+                    for building_x_name in land["buildings"]:
+                        building_x = await get_building(building_x_name)
+                        if building_x["upgradesTo"] == task["item"]:
+                            land["buildings"].remove(building_x_name)
+                            break
+
+                await dm(task["user_id"], f'{task["item"]} has been built at {land["name"]}.')
+                global_info["task_queue"].pop(index)  # Remove this task
+            else:
+                index += 1
+        else:
+            index += 1
+
+    # Execute all build commands
+
     # 1) Siege commands
     # 2) Resolve attack+defend battles
     # 3) Resolve sallyout battles
     # 4) move commands
     # 5) Hire/upgrade troops
     # 6) Increase building progress or build the queued building
-
-    global_info["task_queue"] = []
 
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
@@ -1042,6 +1151,18 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
         await interaction.response.send_message('That building has already been built there.')
         return
 
+    # Fail if the building has to be upgraded to and is missing their requirement
+    if bool(building["fromUpgradeOnly"]):
+        requirement = False
+        for building_x_name in land["buildings"]:
+            building_x = await get_building(building_x_name)
+            if building_x["upgradesTo"] == building_name:
+                requirement = True
+                break
+        if not requirement:
+            await interaction.response.send_message('That building needs to be built by upgrading a lower tier one.')
+            return
+
     # Add it to the queue
     await add_to_queue(user_id, "build", building_name, location_id, time=building["constructionTime"])
 
@@ -1092,7 +1213,13 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     land["buildings"].remove(building_name)
     refund = building["refundPercent"] * building["cost"]
     user["quackerinos"] += refund
-    message = f'The {building_name} was destroyed and you were refunded {refund} qq.'
+
+    # Add the lower tier building if necessary
+    if building["demolishedTo"] != "":
+        land["buildings"].append(building["demolishedTo"])
+        message = f'The {building_name} was demolished into a {building["demolishedTo"]} and you were refunded {refund} qq.'
+    else:
+        message = f'The {building_name} was destroyed and you were refunded {refund} qq.'
 
     with open("./user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)

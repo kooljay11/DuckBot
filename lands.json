@@ -2,7 +2,7 @@
     "default": {
         "name": "",
         "owner_id": 0,
-        "quality": 0,
+        "quality": 5,
         "maxQuality": 20,
         "species": "",
         "buildings": [],
@@ -16,7 +16,7 @@
         "maxQuality": 20,
         "species": "duck",
         "buildings": [
-            "keep"
+            "castle"
         ],
         "garrison": [
             {
@@ -27,6 +27,11 @@
             {
                 "troop_name": "Duck Guard",
                 "amount": 1,
+                "user_id": 107886996365508608
+            },
+            {
+                "troop_name": "Fox Guard",
+                "amount": 3,
                 "user_id": 107886996365508608
             }
         ],
