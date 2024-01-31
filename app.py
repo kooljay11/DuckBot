@@ -733,6 +733,11 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
         target = user_info[target_user_id]
         if user == target:
             await interaction.response.send_message("You can't give quackerinos to yourself.")
+            return
+        elif target_user_id == "default":
+            await interaction.response.send_message("You can't give quackerinos to the default user.")
+            return
+
     except:
         await interaction.response.send_message("Target has not quacked yet.")
         return
@@ -1132,7 +1137,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
     land = await get_land(location_id)
 
     # Fail if building doesn't exist
-    if building == "":
+    if building == "" or not bool(building["enabled"]):
         await interaction.response.send_message('Building not found.')
         return
 
@@ -1249,7 +1254,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
     land = await get_land(location_id)
 
     # Fail if troop doesn't exist
-    if troop == "":
+    if troop == "" or troop == "default_tier1":
         await interaction.response.send_message('Troop not found.')
         return
 
@@ -1451,6 +1456,17 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    troop = await get_troop(troop_name)
+    species = await get_species(troop["species"])
+
+    # Fail if the troop can't move during this season
+    if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
+        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
 
@@ -1503,6 +1519,17 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     # Fail if the your land is already surrounded
     if await is_surrounded(land):
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    troop = await get_troop(troop_name)
+    species = await get_species(troop["species"])
+
+    # Fail if the troop can't move during this season
+    if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
+        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -1566,6 +1593,17 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    troop = await get_troop(troop_name)
+    species = await get_species(troop["species"])
+
+    # Fail if the troop can't move during this season
+    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "siege", troop_name, location_id, amount, target_land=target_land_id)
 
@@ -1613,6 +1651,17 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
     # Fail if the your land is already surrounded
     if await is_surrounded(land) and land != target_land:
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        return
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    troop = await get_troop(troop_name)
+    species = await get_species(troop["species"])
+
+    # Fail if the troop can't move during this season
+    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -1680,6 +1729,17 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     # Fail if the target land is already surrounded
     if await is_surrounded(target_land):
         await interaction.response.send_message(f'You cannot move troops into the garrrison of {target_land["name"]} because it is fully surrounded.')
+        return
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    troop = await get_troop(troop_name)
+    species = await get_species(troop["species"])
+
+    # Fail if the troop can't move during this season
+    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue

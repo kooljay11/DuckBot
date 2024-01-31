@@ -7,6 +7,7 @@
             "bonusATKPerTroop": 0,
             "bonusHPPerTroop": 0,
             "bonusDEFPerTroop": 0,
+            "canMove": true,
             "canAttack": true,
             "desertsOnOathbreaker": true,
             "upkeepDiscountPerTroop": 0,
@@ -19,6 +20,7 @@
         "summer": {},
         "fall": {},
         "winter": {
+            "canMove": false,
             "canAttack": false
         }
     },
@@ -53,6 +55,7 @@
         "fall": {},
         "winter": {
             "bonusIncomePerQuality": 0.33333334,
+            "canMove": true,
             "canAttack": true
         }
     },
