@@ -29,7 +29,8 @@
         "taxPerVassalLand": 0,
         "homeland_id": 1,
         "land_ids": [
-            1
+            1,
+            3
         ],
         "mischief": false,
         "species": "duck",
@@ -104,9 +105,7 @@
         "liege_id": 0,
         "taxPerVassalLand": 0,
         "homeland_id": 3,
-        "land_ids": [
-            3
-        ],
+        "land_ids": [],
         "mischief": false,
         "species": "penguin",
         "party": [],

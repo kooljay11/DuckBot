@@ -281,6 +281,78 @@ async def dailyReset():
             # Resolve the combat
             message = await resolve_battle(attacker_army, defender_army, target_land)
 
+            # If the defender army is empty then transfer the land to the attacking side (and add this to the message)
+            total_defenders = await get_total_troops(defender_army)
+
+            if total_defenders <= 0:
+                troops_by_user = {}
+                highest_user_id = 0
+
+                # Find the person with the most troops currently left in the siegecamp
+                for unit in land["siegeCamp"]:
+                    troops_by_user[unit["user_id"]] = troops_by_user.get(
+                        unit["user_id"], 0) + unit["amount"]
+
+                for user_id, number in troops_by_user.items():
+                    if troops_by_user.get(highest_user_id, 0) < number:
+                        highest_user_id = user_id
+
+                # Destroy buildings accordingly
+                total_destroy_percent = 0
+                total_troops = 0
+
+                # Get the average percent building destruction
+                for company in attacker_army:
+                    troop = await get_troop(company["unit"]["troop_name"])
+                    species = await get_species(troop["species"])
+                    print(f'species: {species}')
+
+                    total_destroy_percent += species[global_info["current_season"]].get(
+                        "percentBuildingsDestroyedOnConquest", species["all-season"]["percentBuildingsDestroyedOnConquest"]) * company["amount"]
+                    total_troops += company["amount"]
+
+                print(f'total_destroy_percent: {total_destroy_percent}')
+                print(f'total_troops: {total_troops}')
+
+                total_buildings_destroyed = int(
+                    round(len(target_land["buildings"]) * (total_destroy_percent/total_troops)))
+                print(
+                    f'total_buildings_destroyed: {total_buildings_destroyed}')
+
+                for x in range(total_buildings_destroyed):
+                    print(
+                        f'target_land["buildings"]: {target_land["buildings"]}')
+
+                    building_name = target_land["buildings"].pop(random.randint(
+                        0, len(target_land["buildings"])-1))
+                    print(f'building_name: {building_name}')
+
+                    building = await get_building(building_name)
+
+                    # Add the lower tier building if necessary
+                    if building["demolishedTo"] != "":
+                        target_land["buildings"].append(
+                            building["demolishedTo"])
+
+                print(f'target_land["buildings"]: {target_land["buildings"]}')
+
+                # Change the land owner
+                if highest_user_id != 0:
+                    user_info[str(target_land["owner_id"])]["land_ids"].remove(
+                        task["target_land_id"])
+                    target_land["owner_id"] = int(highest_user_id)
+                    user_info[str(target_land["owner_id"])]["land_ids"].append(
+                        task["target_land_id"])
+                    message += f'\n\n{target_land["name"]} has been taken by {client.get_user(int(target_land["owner_id"]))}.'
+
+                message += f'\n{total_buildings_destroyed} buildings were burned.'
+
+                print(f'highest_user_id: {highest_user_id}')
+
+                # Move the siege camp troops into the garrison
+                target_land["garrison"] = deepcopy(target_land["siegeCamp"])
+                target_land["siegeCamp"] = []
+
             # DM the results to all the combatants
             for user_id in user_ids:
                 await dm(user_id, message)

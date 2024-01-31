@@ -61,26 +61,25 @@
     },
     "3": {
         "name": "Peoples Republic of Antarctica",
-        "owner_id": 693257736867020870,
+        "owner_id": 107886996365508608,
         "quality": 0,
         "maxQuality": 20,
         "species": "penguin",
         "buildings": [
-            "keep"
+            "stables"
         ],
         "garrison": [
             {
                 "troop_name": "Duck Militia",
-                "amount": 30,
-                "user_id": 693257736867020870
-            }
-        ],
-        "siegeCamp": [
+                "amount": 2,
+                "user_id": 107886996365508608
+            },
             {
-                "troop_name": "Duck Militia",
-                "amount": 62,
+                "troop_name": "Fox Guard",
+                "amount": 30,
                 "user_id": 107886996365508608
             }
-        ]
+        ],
+        "siegeCamp": []
     }
 }
