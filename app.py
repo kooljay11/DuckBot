@@ -34,25 +34,30 @@ async def dailyReset():
         lands = json.load(file)
 
     for userId, user in user_info.items():
+        if userId == "default":
+            continue
 
         # Collect the income from each land
         for land_id in user["land_ids"]:
-            # print(f'lands[land_id]: {lands[land_id]}')
             land = lands[str(land_id)]
 
             species = await get_species(land["species"])
+
             income = land["quality"] + \
                 int(species[global_info["current_season"]].get(
                     "bonusIncomePerQuality", species["all-season"]["bonusIncomePerQuality"]) * land["quality"])
 
-            # Remove income if they have too many lands
+            # Adjust income if they have too many lands
             if len(user["land_ids"]) > global_info["landLimit"]:
                 income -= income * \
                     global_info["landIncomePenaltyPercentPerLand"]
-                income = min(0, income)
+                income = max(0, (income))
 
-            # Don't collect if the land is being sieged by a superior foe
-            # Count total number of HP+DEF for both sides
+            # Adjust income if the land is being sieged by a superior foe
+            if await is_surrounded(land):
+                income -= income * species[global_info["current_season"]].get(
+                    "incomePenaltyPercentInSiege", species["all-season"]["incomePenaltyPercentInSiege"])
+                income = max(0, income)
 
             # Add the income to the user
             user["quackerinos"] += income
@@ -78,12 +83,70 @@ async def dailyReset():
         if target_rank != user["quackRank"]:
             user["quackRank"] = target_rank
 
-        # Attempt to pay all the soldiers in the party and garrisoned in each land
+        # Reset support
+        user["support"] = 0
+        user["supportee_id"] = 0
 
-        # If no money is left then disband all the soldiers that cant be paid
+        # Reduce safety counter
+        if user["safety_count"] > 0:
+            user["safety_count"] -= 1
+
+    # Attempt to pay all the soldiers in each land
+    for land_id, land in lands.items():
+        garrison_disband_list = []
+        siege_camp_disband_list = []
+
+        # Pay the garrison
+        for unit in land["garrison"]:
+            user = user_info[str(unit["user_id"])]
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+
+            cost = unit["amount"] * troop["upkeep"]
+            cost -= cost * species[global_info["current_season"]
+                                   ].get("upkeepDiscountPerTroop", species["all-season"]["upkeepDiscountPerTroop"])
+
+            # If the user doesn't have enough money left then disband all, otherwise reduce the user's qq balance
+            if user["quackerinos"] < cost:
+                # Add unit to the list to be disbanded
+                garrison_disband_list.append(unit)
+
+                # DM user that units have been disbanded
+                await dm(unit["user_id"], f'{unit["amount"]} {unit["troop_name"]} have been disbanded at {land["name"]} because you didn\' have enough money to pay them.')
+            else:
+                user["quackerinos"] -= cost
+
+        # Disband units from the garrison
+        for unit in garrison_disband_list:
+            land["garrison"].remove(unit)
+
+        # Pay the siegecamp
+        for unit in land["siegeCamp"]:
+            user = user_info[str(unit["user_id"])]
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+
+            cost = unit["amount"] * troop["upkeep"]
+            cost -= cost * species[global_info["current_season"]
+                                   ].get("upkeepDiscountPerTroop", species["all-season"]["upkeepDiscountPerTroop"])
+            cost += unit["amount"] * species[global_info["current_season"]
+                                             ].get("upkeepExtraPerTroopInOffensiveSiege", species["all-season"]["upkeepExtraPerTroopInOffensiveSiege"])
+
+            # If the user doesn't have enough money left then disband all, otherwise reduce the user's qq balance
+            if user["quackerinos"] < cost:
+                # Add unit to the list to be disbanded
+                siege_camp_disband_list.append(unit)
+
+                # DM user that units have been disbanded
+                await dm(unit["user_id"], f'{unit["amount"]} {unit["troop_name"]} have been disbanded at {land["name"]} because you didn\' have enough money to pay them.')
+            else:
+                user["quackerinos"] -= cost
+
+        # Disband units from the siege camp
+        for unit in siege_camp_disband_list:
+            land["siegeCamp"].remove(unit)
 
     # Execute the task queue
-
     index = 0
 
     # Execute all the siege commands first
@@ -672,11 +735,6 @@ async def dailyReset():
                 index += 1
         else:
             index += 1
-
-    # Reset support
-    for user in user_info:
-        user["support"] = 0
-        user["supportee_id"] = 0
 
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
@@ -1473,6 +1531,11 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message("You have not quacked yet.")
         return
 
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
+        return
+
     land = await get_land(location_id)
     target_land = await get_land(target_land_id)
 
@@ -1484,6 +1547,18 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     # Fail if the other land doesn't exist
     if target_land == "":
         await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    target_user = user_info[str(target_land["owner_id"])]
+
+    # Prevent this player from attacking someone who is in their safety period
+    if target_user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action against someone who is still in their safety period.")
+        return
+
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1543,6 +1618,11 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
         user = user_info[str(user_id)]
     except:
         await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1610,6 +1690,11 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
         await interaction.response.send_message("You have not quacked yet.")
         return
 
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
+        return
+
     land = await get_land(location_id)
     target_land = await get_land(target_land_id)
 
@@ -1621,6 +1706,13 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
     # Fail if the other land doesn't exist
     if target_land == "":
         await interaction.response.send_message('Target land doesn\'t exist.')
+        return
+
+    target_user = user_info[str(target_land["owner_id"])]
+
+    # Prevent this player from attacking someone who is in their safety period
+    if target_user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action against someone who is still in their safety period.")
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1682,6 +1774,11 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
         await interaction.response.send_message("You have not quacked yet.")
         return
 
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
+        return
+
     land = await get_land(location_id)
     target_land = await get_land(target_land_id)
 
@@ -1740,6 +1837,11 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
         user = user_info[str(user_id)]
     except:
         await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Prevent this player from using this action if they still are in the safety period
+    if user["safety_count"] > 0:
+        await interaction.response.send_message("You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
