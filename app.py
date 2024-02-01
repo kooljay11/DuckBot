@@ -47,6 +47,14 @@ async def dailyReset():
                 int(species[global_info["current_season"]].get(
                     "bonusIncomePerQuality", species["all-season"]["bonusIncomePerQuality"]) * land["quality"])
 
+            # Give the user extra income according to the support they gave/lands this user has
+            if user["support"] > 0:
+                support_used = int(
+                    round(user["support"] / len(user["land_ids"])))
+                user["support"] -= support_used
+                income += income * support_used * \
+                    global_info["supportIncomeBoostPercent"]
+
             # Adjust income if they have too many lands
             if len(user["land_ids"]) > global_info["landLimit"]:
                 income -= income * \
@@ -1908,7 +1916,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     await interaction.response.send_message(message)
 
 
-@client.tree.command(name="support", description="Lend your support to someone to improve one of their land's income by 10%.")
+@client.tree.command(name="support", description="Lend your support to another player to improve one of their land's income by 10%.")
 async def support(interaction: discord.Interaction, target_user_id: str):
     with open("./user_info.json", "r") as file:
         user_info = json.load(file)
@@ -1958,6 +1966,73 @@ async def support(interaction: discord.Interaction, target_user_id: str):
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have lent your support to {client.get_user(int(target_user_id))}.')
+
+
+@client.tree.command(name="giveland", description="Give your occupied land to another player.")
+async def give_land(interaction: discord.Interaction, location_id: int, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        if user == target:
+            await interaction.response.send_message("You can't give support to yourself.")
+            return
+        elif target_user_id == "default":
+            await interaction.response.send_message("You can't give support to the default user.")
+            return
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    land = lands.get(str(location_id), "")
+
+    # Fail if the specified land doesn't exist
+    if land == "":
+        await interaction.response.send_message('Land not found.')
+        return
+
+    # Fail if the specified land doesn't belong to that player
+    if location_id not in user["land_ids"]:
+        await interaction.response.send_message('That land doesn\'t belong to you.')
+        return
+
+    # Fail if this is the user's homeland
+    if location_id == user["homeland_id"]:
+        await interaction.response.send_message('You cannot give your homeland away.')
+        return
+
+    # Prevent this player from giving the land to someone who is in their safety period
+    if target["safety_count"] > 0:
+        await interaction.response.send_message("You cannot give lands to a protected user.")
+        return
+
+    # Give the land to the target user
+    user["land_ids"].remove(location_id)
+    target["land_ids"].append(location_id)
+    land["owner_id"] = target_user_id
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    with open("./lands.json", "w") as file:
+        json.dump(lands, file, indent=4)
+
+    await interaction.response.send_message(f'You have given control of {land["name"]} to {client.get_user(int(target_user_id))}.')
 
 
 async def is_surrounded(land):
@@ -2014,7 +2089,7 @@ async def get_allied_vassals(user_id):
         user_info = json.load(file)
 
     user = user_info.get(str(user_id), "")
-    allies = []
+    allies = user["ally_ids"]
 
     for ally_id, ally in user_info.items():
         if user["liege_id"] == ally["liege_id"] or user["liege_id"] == ally_id or ally["liege_id"] == user_id:

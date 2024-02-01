@@ -28,9 +28,20 @@
     "landIncomePenaltyPercentPerLand": 0.2,
     "qualityImprovementProbability": 0.2,
     "qualityDecayProbability": 0.2,
-    "task_queue": [],
-    "day_counter": 182,
-    "current_season": "spring",
+    "supportIncomeBoostPercent": 0.1,
+    "task_queue": [
+        {
+            "user_id": 107886996365508608,
+            "task": "attack",
+            "item": "Duck Militia",
+            "location_id": 1,
+            "amount": 8,
+            "time": 1,
+            "target_land_id": 3
+        }
+    ],
+    "day_counter": 187,
+    "current_season": "fall",
     "seasons": {
         "spring": 3,
         "summer": 3,
