@@ -305,27 +305,18 @@ async def dailyReset():
                 for company in attacker_army:
                     troop = await get_troop(company["unit"]["troop_name"])
                     species = await get_species(troop["species"])
-                    print(f'species: {species}')
 
                     total_destroy_percent += species[global_info["current_season"]].get(
                         "percentBuildingsDestroyedOnConquest", species["all-season"]["percentBuildingsDestroyedOnConquest"]) * company["amount"]
                     total_troops += company["amount"]
 
-                print(f'total_destroy_percent: {total_destroy_percent}')
-                print(f'total_troops: {total_troops}')
-
                 total_buildings_destroyed = int(
                     round(len(target_land["buildings"]) * (total_destroy_percent/total_troops)))
-                print(
-                    f'total_buildings_destroyed: {total_buildings_destroyed}')
 
                 for x in range(total_buildings_destroyed):
-                    print(
-                        f'target_land["buildings"]: {target_land["buildings"]}')
 
                     building_name = target_land["buildings"].pop(random.randint(
                         0, len(target_land["buildings"])-1))
-                    print(f'building_name: {building_name}')
 
                     building = await get_building(building_name)
 
@@ -333,8 +324,6 @@ async def dailyReset():
                     if building["demolishedTo"] != "":
                         target_land["buildings"].append(
                             building["demolishedTo"])
-
-                print(f'target_land["buildings"]: {target_land["buildings"]}')
 
                 # Change the land owner
                 if highest_user_id != 0:
@@ -346,8 +335,6 @@ async def dailyReset():
                     message += f'\n\n{target_land["name"]} has been taken by {client.get_user(int(target_land["owner_id"]))}.'
 
                 message += f'\n{total_buildings_destroyed} buildings were burned.'
-
-                print(f'highest_user_id: {highest_user_id}')
 
                 # Move the siege camp troops into the garrison
                 target_land["garrison"] = deepcopy(target_land["siegeCamp"])
@@ -601,6 +588,7 @@ async def dailyReset():
 
     index = 0
 
+    # Execute all build commands
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
@@ -685,14 +673,10 @@ async def dailyReset():
         else:
             index += 1
 
-    # Execute all build commands
-
-    # 1) Siege commands
-    # 2) Resolve attack+defend battles
-    # 3) Resolve sallyout battles
-    # 4) move commands
-    # 5) Hire/upgrade troops
-    # 6) Increase building progress or build the queued building
+    # Reset support
+    for user in user_info:
+        user["support"] = 0
+        user["supportee_id"] = 0
 
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
@@ -1820,6 +1804,58 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     message = f'{amount} {troop_name}s were sent to {target_land["name"]}\'s garrison.'
 
     await interaction.response.send_message(message)
+
+
+@client.tree.command(name="support", description="Lend your support to someone to improve one of their land's income by 10%.")
+async def support(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        if user == target:
+            await interaction.response.send_message("You can't give support to yourself.")
+            return
+        elif target_user_id == "default":
+            await interaction.response.send_message("You can't give support to the default user.")
+            return
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Make sure this user has already had a homeland
+    if user["homeland_id"] == -1:
+        await interaction.response.send_message("You cannot use this command without a homeland.")
+        return
+
+    # Make sure this user has no lands
+    if len(user["land_ids"]) > 0:
+        await interaction.response.send_message("You cannot use this command if you already have lands.")
+        return
+
+    # Make sure the user hasn't supported anyone yet
+    if user["supportee_id"] == 0:
+        await interaction.response.send_message("You can only use this command once per day.")
+        return
+
+    target["support"] += 1
+    user["supportee_id"] = target_user_id
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have lent your support to {client.get_user(int(target_user_id))}.')
 
 
 async def is_surrounded(land):
