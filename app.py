@@ -2035,6 +2035,82 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
     await interaction.response.send_message(f'You have given control of {land["name"]} to {client.get_user(int(target_user_id))}.')
 
 
+@client.tree.command(name="addally", description="Add a user to your ally list.")
+async def add_ally(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        if user == target:
+            await interaction.response.send_message("You can't ally yourself.")
+            return
+        elif target_user_id == "default":
+            await interaction.response.send_message("You can't ally with the default user.")
+            return
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if target user already is in your ally list
+    if target_user_id in user["ally_ids"]:
+        await interaction.response.send_message(f'You have already allied with that person. Your ally list is: {user["ally_ids"]}')
+        return
+
+    user["ally_ids"].append(target_user_id)
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have added  {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
+
+
+@client.tree.command(name="removeally", description="Remove a user to your ally list.")
+async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if target user is not in your ally list
+    if target_user_id not in user["ally_ids"]:
+        await interaction.response.send_message(f'You aren\'t allied with that person. Your ally list is: {user["ally_ids"]}')
+        return
+
+    user["ally_ids"].remove(target_user_id)
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have removed {client.get_user(int(target_user_id))} from your allylist. Your ally list is now: {user["ally_ids"]}')
+
+
 async def is_surrounded(land):
     defender_score = 0
     sieger_score = 0
