@@ -1086,6 +1086,32 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     await interaction.response.send_message(message)
 
 
+@client.tree.command(name="rawquackinfo", description="Check out the raw quack info of a user.")
+async def raw_quack_info(interaction: discord.Interaction, user_id: str = ""):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    if user_id == "":
+        user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("That user has not quacked yet.")
+        return
+
+    try:
+        message = f'{user}'
+    except:
+        message = 'Error while fetching user information.'
+
+    await interaction.response.send_message(message)
+
+
 @client.tree.command(name="landinfo", description="Check out the info on a certain land.")
 async def land_info(interaction: discord.Interaction, land_id: int = 0, land_name: str = ""):
     # Fail if both fields are empty
