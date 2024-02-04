@@ -1022,6 +1022,34 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
             else:
                 message += f'This user is not in control of their homeland.'
 
+        if user["liege_id"] != 0:
+            message += f'\nLiege: {client.get_user(int(user["liege_id"]))}'
+
+        if len(user["ally_ids"]) > 0:
+            message += f'\nAllies: '
+            for ally_id in user["ally_ids"]:
+                message += f'{client.get_user(int(ally_id))}, '
+            message = message.rstrip()
+            message = message.rstrip(",")
+
+        has_vassals = False
+
+        for target_id, target in user_info.items():
+            if target["liege_id"] == user_id:
+                if not has_vassals:
+                    has_vassals = True
+                    message += f'\nVassals: '
+                message += f'{client.get_user(int(target_id))}, '
+        message = message.rstrip()
+        message = message.rstrip(",")
+
+        if len(user["vassal_waitlist_ids"]) > 0:
+            message += f'\Vassal waitlist: '
+            for target_id in user["vassal_waitlist_ids"]:
+                message += f'{client.get_user(int(target_id))}, '
+        message = message.rstrip()
+        message = message.rstrip(",")
+
         for land_id in user["land_ids"]:
             land = await get_land(land_id)
 
