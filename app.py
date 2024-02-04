@@ -101,6 +101,9 @@ async def dailyReset():
 
     # Attempt to pay all the soldiers in each land
     for land_id, land in lands.items():
+        if land_id == "default":
+            continue
+
         garrison_disband_list = []
         siege_camp_disband_list = []
 
@@ -120,7 +123,7 @@ async def dailyReset():
                 garrison_disband_list.append(unit)
 
                 # DM user that units have been disbanded
-                await dm(unit["user_id"], f'{unit["amount"]} {unit["troop_name"]} have been disbanded at {land["name"]} because you didn\' have enough money to pay them.')
+                await dm(unit["user_id"], f'{unit["amount"]} {unit["troop_name"]} have been disbanded at {land["name"]} because you didn\'t have enough money to pay them.')
             else:
                 user["quackerinos"] -= cost
 
@@ -274,8 +277,6 @@ async def dailyReset():
                 defender_army.append({"unit": unit, "amount": unit["amount"]})
 
             if include_siege_camp:
-                target_land = lands.get(str(task["target_land_id"]), "")
-
                 # Add all siege camp to the attack army
                 for unit in target_land["siegeCamp"]:
                     attacker_army.append(
@@ -349,8 +350,14 @@ async def dailyReset():
             for unit in defender_army:
                 user_ids.append(unit["unit"]["user_id"])
 
-            # Resolve the combat
-            message = await resolve_battle(attacker_army, defender_army, target_land)
+            total_defenders = await get_total_troops(defender_army)
+            total_attackers = await get_total_troops(attacker_army)
+            # Only resolve combat if there are defenders and attackers
+            if total_defenders > 0 and total_attackers > 0:
+                # Resolve the combat
+                message = await resolve_battle(attacker_army, defender_army, target_land)
+            else:
+                message = f'There were not enough troops for a battle at {target_land["name"]}.'
 
             # If the defender army is empty then transfer the land to the attacking side (and add this to the message)
             total_defenders = await get_total_troops(defender_army)
@@ -367,6 +374,7 @@ async def dailyReset():
                 for user_id, number in troops_by_user.items():
                     if troops_by_user.get(highest_user_id, 0) < number:
                         highest_user_id = user_id
+                        print(f'highest_user_id: {highest_user_id}')
 
                 # Destroy buildings accordingly
                 total_destroy_percent = 0
@@ -429,12 +437,12 @@ async def dailyReset():
             defender_army = []
 
             defend_index = 0
+            target_land = lands.get(str(task["target_land_id"]), "")
 
             while defend_index < len(global_info["task_queue"]):
                 action = global_info["task_queue"][defend_index]
                 if action["target_land_id"] == task["target_land_id"] and action["task"] == "sallyout":
                     land = lands.get(str(action["location_id"]), "")
-                    target_land = lands.get(str(action["target_land_id"]), "")
 
                     unit = await get_unit(land["siegeCamp"], action["item"], action["user_id"])
 
@@ -470,9 +478,15 @@ async def dailyReset():
                 attacker_army.append(
                     {"unit": unit, "amount": unit["amount"]})
 
-            # Resolve the combat
-            target_land = lands.get(str(task["target_land_id"]), "")
-            message = await resolve_battle(attacker_army, defender_army, target_land)
+            total_defenders = await get_total_troops(defender_army)
+            total_attackers = await get_total_troops(attacker_army)
+
+            # Only resolve combat if there are defenders and attackers
+            if total_defenders > 0 and total_attackers > 0:
+                # Resolve the combat
+                message = await resolve_battle(attacker_army, defender_army)
+            else:
+                message = f'There were not enough troops for a battle at {target_land["name"]}.'
 
             # DM the results to all the combatants
             for user_id in user_ids:
@@ -543,7 +557,7 @@ async def dailyReset():
 
     index = 0
 
-    # Execute all hire/upgrade commands in the following order: Tier 4 upgrades → Tier 3 upgrades → Tier 2 upgrades → Hire upgrades
+    # Execute all upgrade commands in the following order: Tier 4 upgrades → Tier 3 upgrades → Tier 2 upgrades → Hire upgrades
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
@@ -2023,7 +2037,7 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
     # Give the land to the target user
     user["land_ids"].remove(location_id)
     target["land_ids"].append(location_id)
-    land["owner_id"] = target_user_id
+    land["owner_id"] = int(target_user_id)
 
     # Save to database
     with open("./user_info.json", "w") as file:
@@ -2109,6 +2123,255 @@ async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have removed {client.get_user(int(target_user_id))} from your allylist. Your ally list is now: {user["ally_ids"]}')
+
+
+@client.tree.command(name="declareallegiance", description="Declare your allegiance to a user.")
+async def declare_allegiance(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        if user == target:
+            await interaction.response.send_message("You can't declare allegiance to yourself.")
+            return
+        elif target_user_id == "default":
+            await interaction.response.send_message("You can't declare allegiance to  the default user.")
+            return
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if target user already is in your ally list
+    if target_user_id == user["liege_id"]:
+        await interaction.response.send_message(f'This user is already your liege.')
+        return
+
+    # Fail if user already has a liege
+    if user["liege_id"] != 0:
+        await interaction.response.send_message(f'You already have a liege. You must renounce your oath before declaring your allegiance to someone else.')
+        return
+
+    # Fail if user already on the target user's vassal waitlist
+    if user_id in target["vassal_waitlist_ids"]:
+        await interaction.response.send_message(f'You already are on this person\'s vassal waitlist. You must wait until they accept your allegiance.')
+        return
+
+    target["vassal_waitlist_ids"].append(user_id)
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have added yourself to {client.get_user(int(target_user_id))}\'s vassal waitlist. You must wait until they accept your allegiance.')
+
+
+@client.tree.command(name="acceptallegiance", description="Accept an oath of allegiance from a user.")
+async def accept_allegiance(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if target user has already been accepted as a vassal
+    if user_id == target["liege_id"]:
+        user["vassal_waitlist_ids"].remove(target_user_id)
+
+        # Save to database
+        with open("./user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
+
+        await interaction.response.send_message(f'This user is already your vassal.')
+        return
+
+    # Fail if target user already has a liege
+    if target["liege_id"] != 0:
+        user["vassal_waitlist_ids"].remove(target_user_id)
+
+        # Save to database
+        with open("./user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
+
+        await interaction.response.send_message(f'This user already has a liege. They must renounce your oath before declaring their allegiance to someone else.')
+        return
+
+    user["vassal_waitlist_ids"].remove(target_user_id)
+    target["liege_id"] = user_id
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have accepted {client.get_user(int(target_user_id))}\'s oath of allegiance.')
+
+
+@client.tree.command(name="releasevassal", description="Release one of your vassals from their oath of allegiance.")
+async def release_vassal(interaction: discord.Interaction, target_user_id: str):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if target user does not have this user as their liege
+    if user_id != target["liege_id"]:
+        await interaction.response.send_message("Target user is not your vassal.")
+        return
+
+    target["liege_id"] = 0
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have released {client.get_user(int(target_user_id))} from their oath of allegiance.')
+
+
+@client.tree.command(name="renounceallegiance", description="Renounce your allegiance to your liege. THERE WILL BE CONSEQUENCES.")
+async def renounce_allegiance(interaction: discord.Interaction):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Make sure the target player exists in user_info
+    try:
+        target_user_id = user["liege_id"]
+        target = user_info[str(target_user_id)]
+    except:
+        await interaction.response.send_message("Target has not quacked yet.")
+        return
+
+    # Fail if this user does not have a liege
+    if user["liege_id"] == 0:
+        await interaction.response.send_message("You don't have a liege.")
+        return
+
+    with open("./lands.json", "r") as file:
+        lands = json.load(file)
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    # Disband all deserting troops
+    for land_id, land in lands.items():
+        if land_id == "default":
+            continue
+
+        # Check the garrison for deserters
+        for unit in land["garrison"]:
+            user = user_info[str(unit["user_id"])]
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+
+            percent_desert = species[global_info["current_season"]
+                                     ].get("percentDesertsOnOathbreaker", species["all-season"]["percentDesertsOnOathbreaker"])
+            total_amount = unit["amount"]
+            num_desert = 0
+            if percent_desert > 0:
+                for x in range(unit["amount"]):
+                    if random.random() > percent_desert:
+                        num_desert += 1
+
+                unit["amount"] -= num_desert
+
+                # DM user that units have been disbanded
+                await dm(unit["user_id"], f'{num_desert}/{total_amount} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
+
+        # Disband empty units from the garrison
+        index = 0
+        while index < len(land["garrison"]):
+            if land["garrison"][index]["amount"] <= 0:
+                land["garrison"].pop(index)
+            else:
+                index += 1
+
+        # Check the siegecamp for deserters
+        for unit in land["siegeCamp"]:
+            user = user_info[str(unit["user_id"])]
+            troop = await get_troop(unit["troop_name"])
+            species = await get_species(troop["species"])
+
+            percent_desert = species[global_info["current_season"]
+                                     ].get("percentDesertsOnOathbreaker", species["all-season"]["percentDesertsOnOathbreaker"])
+            total_amount = unit["amount"]
+            num_desert = 0
+            if percent_desert > 0:
+                for x in range(unit["amount"]):
+                    if random.random() > percent_desert:
+                        num_desert += 1
+
+                unit["amount"] -= num_desert
+
+                # DM user that units have been disbanded
+                print(
+                    f'{num_desert}/{total_amount} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
+                await dm(unit["user_id"], f'{num_desert}/{unit["amount"]} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
+
+        # Disband empty units from the siegeCamp
+        index = 0
+        while index < len(land["siegeCamp"]):
+            if land["siegeCamp"][index]["amount"] <= 0:
+                land["siegeCamp"].pop(index)
+            else:
+                index += 1
+
+    user["liege_id"] = 0
+    user["quackerinos"] -= int(user["quackerinos"] *
+                               global_info["percentPlunderedOnOathbreaker"])
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    with open("./lands.json", "w") as file:
+        json.dump(lands, file, indent=4)
+
+    await interaction.response.send_message(f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
 
 
 async def is_surrounded(land):

@@ -27,17 +27,18 @@
         "quackedToday": false,
         "quackRank": "Duckling",
         "spentQuacks": 5,
-        "quackerinos": 1570,
+        "quackerinos": 514,
         "safety_count": 0,
         "renown": 0,
         "support": 0,
         "supportee_id": 0,
-        "liege_id": 479504133993529344,
+        "liege_id": 693257736867020870,
         "ally_ids": [],
         "taxPerVassalLand": 0,
         "homeland_id": 1,
         "land_ids": [
-            1
+            1,
+            3
         ],
         "mischief": false,
         "species": "duck",
@@ -128,9 +129,7 @@
         "ally_ids": [],
         "taxPerVassalLand": 0,
         "homeland_id": 3,
-        "land_ids": [
-            3
-        ],
+        "land_ids": [],
         "mischief": false,
         "species": "penguin",
         "party": [],
