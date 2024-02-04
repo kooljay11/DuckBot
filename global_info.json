@@ -17,7 +17,7 @@
         "Duck Diety": 1460,
         "Duck Singularity": 3650
     },
-    "qqExchangeRate": 24,
+    "qqExchangeRate": 17,
     "qqExchangeRateRange": [
         15,
         25
@@ -30,19 +30,9 @@
     "qualityDecayProbability": 0.2,
     "supportIncomeBoostPercent": 0.1,
     "percentPlunderedOnOathbreaker": 0.25,
-    "task_queue": [
-        {
-            "user_id": 107886996365508608,
-            "task": "attack",
-            "item": "Duck Militia",
-            "location_id": 1,
-            "amount": 1,
-            "time": 1,
-            "target_land_id": 3
-        }
-    ],
-    "day_counter": 194,
-    "current_season": "spring",
+    "task_queue": [],
+    "day_counter": 196,
+    "current_season": "summer",
     "seasons": {
         "spring": 3,
         "summer": 3,

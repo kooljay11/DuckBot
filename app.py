@@ -58,14 +58,15 @@ async def dailyReset():
             # Adjust income if they have too many lands
             if len(user["land_ids"]) > global_info["landLimit"]:
                 income -= income * \
-                    global_info["landIncomePenaltyPercentPerLand"]
-                income = max(0, (income))
+                    global_info["landIncomePenaltyPercentPerLand"] * \
+                    (len(user["land_ids"]) - global_info["landLimit"])
+                income = max(0, int(income))
 
             # Adjust income if the land is being sieged by a superior foe
             if await is_surrounded(land):
                 income -= income * species[global_info["current_season"]].get(
                     "incomePenaltyPercentInSiege", species["all-season"]["incomePenaltyPercentInSiege"])
-                income = max(0, income)
+                income = max(0, int(income))
 
             # Add the income to the user
             user["quackerinos"] += income
