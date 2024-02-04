@@ -2,22 +2,35 @@
     "default": {
         "name": "",
         "owner_id": 0,
-        "quality": 0,
+        "quality": 5,
         "maxQuality": 20,
         "species": "",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     },
     "1": {
         "name": "NewHaven",
         "owner_id": 107886996365508608,
-        "quality": 0,
+        "quality": 18,
         "maxQuality": 20,
         "species": "duck",
-        "buildings": [],
-        "garrison": [],
-        "seigeCamp": []
+        "buildings": [
+            "castle"
+        ],
+        "garrison": [
+            {
+                "troop_name": "Duck Militia",
+                "amount": 15,
+                "user_id": 107886996365508608
+            },
+            {
+                "troop_name": "Duck Guard",
+                "amount": 57,
+                "user_id": 107886996365508608
+            }
+        ],
+        "siegeCamp": []
     },
     "2": {
         "name": "Climate Change",
@@ -27,7 +40,7 @@
         "species": "duck",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
     },
     "3": {
         "name": "Peoples Republic of Antarctica",
@@ -37,6 +50,36 @@
         "species": "penguin",
         "buildings": [],
         "garrison": [],
-        "seigeCamp": []
+        "siegeCamp": []
+    },
+    "4": {
+        "name": "Land 4",
+        "owner_id": 107886996365508608,
+        "quality": 18,
+        "maxQuality": 20,
+        "species": "penguin",
+        "buildings": [],
+        "garrison": [],
+        "siegeCamp": []
+    },
+    "5": {
+        "name": "Land 5",
+        "owner_id": 107886996365508608,
+        "quality": 20,
+        "maxQuality": 20,
+        "species": "penguin",
+        "buildings": [],
+        "garrison": [],
+        "siegeCamp": []
+    },
+    "6": {
+        "name": "Land 6",
+        "owner_id": 107886996365508608,
+        "quality": 19,
+        "maxQuality": 20,
+        "species": "penguin",
+        "buildings": [],
+        "garrison": [],
+        "siegeCamp": []
     }
 }

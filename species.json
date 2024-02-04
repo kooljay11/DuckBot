@@ -7,8 +7,9 @@
             "bonusATKPerTroop": 0,
             "bonusHPPerTroop": 0,
             "bonusDEFPerTroop": 0,
+            "canMove": true,
             "canAttack": true,
-            "desertsOnOathbreaker": true,
+            "percentDesertsOnOathbreaker": 0.5,
             "upkeepDiscountPerTroop": 0,
             "incomePenaltyPercentInSiege": 1,
             "upkeepExtraPerTroopInOffensiveSiege": 1,
@@ -19,6 +20,7 @@
         "summer": {},
         "fall": {},
         "winter": {
+            "canMove": false,
             "canAttack": false
         }
     },
@@ -53,6 +55,7 @@
         "fall": {},
         "winter": {
             "bonusIncomePerQuality": 0.33333334,
+            "canMove": true,
             "canAttack": true
         }
     },
@@ -87,7 +90,7 @@
     },
     "fox": {
         "all-season": {
-            "desertsOnOathbreaker": false,
+            "percentDesertsOnOathbreaker": 0,
             "percentBuildingsDestroyedOnConquest": 1
         },
         "spring": {},

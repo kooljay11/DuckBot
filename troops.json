@@ -9,7 +9,8 @@
         "upkeep": 1,
         "fromUpgradeOnly": false,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier2": {
         "species": "",
@@ -17,11 +18,12 @@
         "ATK": 2,
         "HP": 1,
         "AP": 0,
-        "cost": 16,
+        "cost": 12,
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier3": {
         "species": "",
@@ -29,11 +31,12 @@
         "ATK": 3,
         "HP": 2,
         "AP": 0,
-        "cost": 24,
+        "cost": 12,
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "default_tier4": {
         "species": "",
@@ -41,11 +44,12 @@
         "ATK": 4,
         "HP": 3,
         "AP": 0,
-        "cost": 32,
+        "cost": 12,
         "upkeep": 1,
         "fromUpgradeOnly": true,
         "upgradesTo": "",
-        "requiresSpeciesMatch": true
+        "requiresSpeciesMatch": true,
+        "refundPercentOnDisband": 0
     },
     "Duck Militia": {
         "species": "duck",
@@ -98,13 +102,13 @@
     "Rat Guard": {
         "species": "rat",
         "tier": 2,
-        "cost": 13,
+        "cost": 10,
         "upgradesTo": "Rat Knight"
     },
     "Rat Knight": {
         "species": "rat",
         "tier": 3,
-        "cost": 18
+        "cost": 10
     },
     "Caracal Militia": {
         "species": "wildcat",
@@ -150,7 +154,7 @@
     "Fox Knight": {
         "species": "fox",
         "tier": 3,
-        "cost": 20,
+        "cost": 24,
         "upkeep": 2,
         "fromUpgradeOnly": false,
         "requiresSpeciesMatch": false
