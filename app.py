@@ -81,6 +81,18 @@ async def dailyReset():
                 if land["quality"] > 0 and random.random() < global_info["qualityDecayProbability"]:
                     land["quality"] -= 1
 
+        # Pay liege lord according to the tax rate set by them
+        if user["liege_id"] != 0:
+            liege = user_info[str(user["liege_id"])]
+            tax = liege["taxPerVassalLand"] * len(user["land_ids"])
+
+            if tax > user["quackerinos"]:
+                liege["quackerinos"] += user["quackerinos"]
+                user["quackerinos"] = 0
+            else:
+                liege["quackerinos"] += tax
+                user["quackerinos"] -= tax
+
         # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
             user["quackStreak"] = 0
@@ -1023,7 +1035,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
                 message += f'This user is not in control of their homeland.'
 
         if user["liege_id"] != 0:
-            message += f'\nLiege: {client.get_user(int(user["liege_id"]))}'
+            message += f'\nLiege: {client.get_user(int(user["liege_id"]))} (ID:{user["liege_id"]})'
 
         if len(user["ally_ids"]) > 0:
             message += f'\nAllies: '
@@ -1033,6 +1045,9 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
             message = message.rstrip(",")
 
         has_vassals = False
+
+        if user["taxPerVassalLand"] > 0:
+            message += f'\nTax per vassal land: {user["taxPerVassalLand"]}'
 
         for target_id, target in user_info.items():
             if target["liege_id"] == user_id:
@@ -2401,6 +2416,42 @@ async def renounce_allegiance(interaction: discord.Interaction):
         json.dump(lands, file, indent=4)
 
     await interaction.response.send_message(f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
+
+
+@client.tree.command(name="setvassaltax", description="Set a flat tax rate per land for all vassals.")
+async def set_vassal_tax(interaction: discord.Interaction, amount: int):
+    with open("./user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await interaction.response.send_message("You have not quacked yet.")
+        return
+
+    # Prevent the number from being lower than 0
+    if amount < 0:
+        await interaction.response.send_message("You cannot set a negative tax rate.")
+        return
+
+    # Prevent the number from being too high
+    if amount > global_info["maxtaxPerVassalLand"]:
+        await interaction.response.send_message(f'You cannot set a tax rate higher than the maximum ({global_info["maxtaxPerVassalLand"]}).')
+        return
+
+    user["taxPerVassalLand"] = amount
+
+    # Save to database
+    with open("./user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await interaction.response.send_message(f'You have set a tax rate of {amount} per land for all your vassals.')
 
 
 async def is_surrounded(land):
