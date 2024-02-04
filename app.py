@@ -176,7 +176,7 @@ async def dailyReset():
                 unit = await get_unit(land["garrison"], task["item"], task["user_id"])
                 army = land["garrison"]
                 if unit == "" or unit["amount"] < task["amount"]:
-                    await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
+                    await dm(task["user_id"], f'You don\'t have enough of {task["item"]} from {land["name"]} to send to the siege camp of {target_land["name"]}.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
@@ -190,13 +190,13 @@ async def dailyReset():
 
             # Fail if the target is the liege or vassal of your liege or your vassal
             if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == task["user_id"]):
-                await dm(task["user_id"], 'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+                await dm(task["user_id"], f'You can\'t siege {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
             # Fail if the your land is already surrounded
             if await is_surrounded(land):
-                await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                await dm(task["user_id"], f'You cannot move {task["item"]} out of {land["name"]} because it is fully surrounded.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -240,21 +240,21 @@ async def dailyReset():
                     if unit == "" or unit["amount"] < action["amount"]:
                         unit = await get_unit(land["garrison"], action["item"], action["user_id"])
                         if unit == "" or unit["amount"] < action["amount"]:
-                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            await dm(action["user_id"], f'You don\'t have enough {action["item"]} from {land["name"]} to send on an attack against {target_land["name"]}.')
                             global_info["task_queue"].pop(
                                 defend_index)  # Remove this task
                             continue
 
                     # Fail if they are both the same land
                     if target_land["owner_id"] == action["user_id"]:
-                        await dm(action["user_id"], 'You don\'t need to use this command for troops in the garrison of a land being attacked.')
+                        await dm(action["user_id"], 'You don\'t need to use the defend command for troops in the garrison of a land being attacked.')
                         global_info["task_queue"].pop(
                             defend_index)  # Remove this task
                         continue
 
                     # Fail if the your land is already surrounded
                     if await is_surrounded(land):
-                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        await dm(task["user_id"], f'You cannot move {action["item"]} out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
                             defend_index)  # Remove this task
                         continue
@@ -299,7 +299,7 @@ async def dailyReset():
                     if unit == "" or unit["amount"] < action["amount"]:
                         unit = await get_unit(land["garrison"], action["item"], action["user_id"])
                         if unit == "" or unit["amount"] < action["amount"]:
-                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            await dm(action["user_id"], f'You don\'t have enough {action["item"]} from {land["name"]} to send on an attack against {target_land["name"]}.')
                             global_info["task_queue"].pop(
                                 attack_index)  # Remove this task
                             continue
@@ -320,14 +320,14 @@ async def dailyReset():
 
                     # Fail if the target is the liege or vassal of your liege or your vassal
                     if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == action["user_id"]):
-                        await dm(action["user_id"], 'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+                        await dm(action["user_id"], f'You can\'t attack {client.get_user(int(target_land["owner_id"]))} for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
                         global_info["task_queue"].pop(
                             attack_index)  # Remove this task
                         continue
 
                     # Fail if the your land is already surrounded
                     if await is_surrounded(land) and land != target_land:
-                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        await dm(task["user_id"], f'You cannot move {task["item"]} out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
                             attack_index)  # Remove this task
                         continue
@@ -374,7 +374,6 @@ async def dailyReset():
                 for user_id, number in troops_by_user.items():
                     if troops_by_user.get(highest_user_id, 0) < number:
                         highest_user_id = user_id
-                        print(f'highest_user_id: {highest_user_id}')
 
                 # Destroy buildings accordingly
                 total_destroy_percent = 0
@@ -450,14 +449,14 @@ async def dailyReset():
                     if unit == "" or unit["amount"] < action["amount"]:
                         unit = await get_unit(land["garrison"], action["item"], action["user_id"])
                         if unit == "" or unit["amount"] < action["amount"]:
-                            await dm(action["user_id"], 'You don\'t have enough of that troop from that location to send on an attack.')
+                            await dm(action["user_id"], f'You don\'t have enough {action["item"]} from {land["name"]} to send on an attack at {target_land["name"]}.')
                             global_info["task_queue"].pop(
                                 defend_index)  # Remove this task
                             continue
 
                     # Fail if the your land is already surrounded
                     if await is_surrounded(land) and action["location_id"] != action["target_land_id"]:
-                        await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                        await dm(task["user_id"], f'You cannot move {action["item"]} out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
                             defend_index)  # Remove this task
                         continue
@@ -512,7 +511,7 @@ async def dailyReset():
                 unit = await get_unit(land["garrison"], task["item"], task["user_id"])
                 army = land["garrison"]
                 if unit == "" or unit["amount"] < task["amount"]:
-                    await dm(task["user_id"], 'You don\'t have enough of that troop from that location to send to the siege camp.')
+                    await dm(task["user_id"], f'You don\'t have enough {task["item"]} from {land["name"]} to send to the siege camp of {target_land["name"]}.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
                 # Fail if they are both the same land
@@ -526,19 +525,19 @@ async def dailyReset():
             # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
             if target_land["owner_id"] != task["user_id"]:
                 if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
-                    await dm(task["user_id"], 'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
+                    await dm(task["user_id"], f'You can\'t move {task["item"]} into {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are not your liege, fellow vassal, or your vassal.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
             # Fail if the your land is already surrounded
             if await is_surrounded(land):
-                await dm(task["user_id"], f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+                await dm(task["user_id"], f'You cannot move {task["item"]} out of {land["name"]} because it is fully surrounded.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
             # Fail if the target land is already surrounded unless taking troops out of the siege camp
             if await is_surrounded(target_land) and army != land["siegeCamp"]:
-                await dm(task["user_id"], f'You cannot move troops into the garrison of {target_land["name"]} because it is fully surrounded.')
+                await dm(task["user_id"], f'You cannot move {task["item"]} into the garrison of {target_land["name"]} because it is fully surrounded.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -584,7 +583,7 @@ async def dailyReset():
                         land = lands.get(str(action["location_id"]), "")
                         # Fail if the specified land doesn't belong to that player
                         if action["location_id"] not in user["land_ids"]:
-                            await dm(action["user_id"], 'That land doesn\'t belong to you.')
+                            await dm(action["user_id"], f'You cannot upgrade {action["item"]} at {land["name"]} because that land doesn\'t belong to you.')
                             global_info["task_queue"].pop(
                                 troop_index)  # Remove this task
                             continue
@@ -593,7 +592,7 @@ async def dailyReset():
 
                         # Fail if that troop isn't in that land or if there aren't as many as specified
                         if unit == "" or unit["amount"] < action["amount"]:
-                            await dm(action["user_id"], f'You don\'t have enough of that troop to upgrade {action["amount"]} of them.')
+                            await dm(action["user_id"], f'You don\'t have enough {action["item"]} to upgrade {action["amount"]} of them.')
                             global_info["task_queue"].pop(
                                 troop_index)  # Remove this task
                             continue
@@ -603,7 +602,7 @@ async def dailyReset():
 
                         # Fail if not enough money
                         if int(user["quackerinos"]) < cost:
-                            await dm(action["user_id"], "You don't have enough quackerinos for that.")
+                            await dm(action["user_id"], f'You don\'t have enough quackerinos to upgrade {action["amount"]} {action["item"]}s.')
                             global_info["task_queue"].pop(
                                 troop_index)  # Remove this task
                             continue
@@ -644,7 +643,7 @@ async def dailyReset():
 
             # Fail if the specified land doesn't belong to that player
             if task["location_id"] not in user["land_ids"]:
-                await dm(task["user_id"], 'That land doesn\'t belong to you.')
+                await dm(task["user_id"], f'You cannot hire {action["item"]} at {land["name"]} because that land doesn\'t belong to you.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -652,7 +651,7 @@ async def dailyReset():
 
             # Fail if not enough money
             if int(user["quackerinos"]) < cost:
-                await dm(task["user_id"], "You don't have enough quackerinos for that.")
+                await dm(task["user_id"], f'You don\'t have enough quackerinos to upgrade {action["amount"]} {action["item"]}s.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -684,13 +683,13 @@ async def dailyReset():
 
             # Fail if the specified land doesn't belong to that player
             if task["location_id"] not in user["land_ids"]:
-                await dm(task["user_id"], 'That land doesn\'t belong to you.')
+                await dm(task["user_id"], f'You cannot build {task["item"]} because {land["name"]} doesn\'t belong to you.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
             # Fail if the building has already been built on that land
             if task["item"] in land["buildings"]:
-                await dm(task["user_id"], 'That building has already been built there.')
+                await dm(task["user_id"], f'{task["item"]} has already been built at {land["name"]}.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -703,7 +702,7 @@ async def dailyReset():
                         requirement = True
                         break
                 if not requirement:
-                    await dm(task["user_id"], 'That building needs to be built by upgrading a lower tier one.')
+                    await dm(task["user_id"], f'{task["item"]} needs to be built at {land["name"]} by upgrading a lower tier one.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
@@ -712,7 +711,7 @@ async def dailyReset():
             skip = False
             while upgradesTo != "":
                 if upgradesTo in land["buildings"]:
-                    await dm(task["user_id"], 'There is already an upper tier equivalent of that building in that location.')
+                    await dm(task["user_id"], f'There is already an upper tier equivalent of {task["item"]} at {land["name"]}.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     skip = True
                     break
@@ -728,7 +727,7 @@ async def dailyReset():
 
                 # Fail if not enough money
                 if int(user["quackerinos"]) < cost:
-                    await dm(task["user_id"], "You don't have enough quackerinos for that.")
+                    await dm(task["user_id"], f'You don\'t have enough quackerinos to build {task["item"]} at {land["name"]}.')
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
@@ -1648,8 +1647,9 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
-    # Add the task to the queue
+    # Add the task to the queue and alert the defender
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
+    await dm(target_land["owner_id"], f'{client.get_user(int(user_id))} has sent {amount} {troop_name}s to attack {target_land["name"]}!')
 
     message = f'{amount} {troop_name}s were sent to attack {target_land["name"]}.'
 

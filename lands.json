@@ -44,18 +44,12 @@
     },
     "3": {
         "name": "Peoples Republic of Antarctica",
-        "owner_id": 107886996365508608,
+        "owner_id": 692095041635614750,
         "quality": 0,
         "maxQuality": 20,
         "species": "penguin",
         "buildings": [],
-        "garrison": [
-            {
-                "troop_name": "Fox Guard",
-                "amount": 30,
-                "user_id": 107886996365508608
-            }
-        ],
+        "garrison": [],
         "siegeCamp": []
     }
 }
