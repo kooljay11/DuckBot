@@ -21,14 +21,14 @@ async def dailyReset():
         response = random.choice(randomresponses)
     await client.change_presence(activity=discord.CustomActivity(name=response, emoji='🦆'))
     # Requires that you do the following for this to work: pip install discord.py>=2.3.2
-    
+
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
         global_info = json.load(file)
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     for userId, user in user_info.items():
@@ -783,7 +783,7 @@ async def dailyReset():
     with open("./global_info.json", "w") as file:
         json.dump(global_info, file, indent=4)
 
-    with open("./lands.json", "w") as file:
+    with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
     # Tell the specified channel about the update
@@ -1088,7 +1088,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
 
 @client.tree.command(name="rawquackinfo", description="Check out the raw quack info of a user.")
 async def raw_quack_info(interaction: discord.Interaction, user_id: str = ""):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -1494,7 +1494,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
 
 @client.tree.command(name="upgrade", description="Upgrade some troops (takes one month).")
 async def upgrade(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1613,7 +1613,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
 
 @client.tree.command(name="attack", description="Launch an assault on someone's land/castle (takes one month).")
 async def attack(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1703,7 +1703,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
 
 @client.tree.command(name="defend", description="Defend someone's land/castle from an incoming assault (takes one month).")
 async def defend(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1773,7 +1773,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
 
 @client.tree.command(name="siege", description="Initiate or join a siege on someone's land (takes one month).")
 async def siege(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1857,7 +1857,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
 
 @client.tree.command(name="sallyout", description="Launch an assault on a siege camp (takes one month).")
 async def sallyout(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1922,7 +1922,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
 
 @client.tree.command(name="move", description="Move troops to one of your or an ally's garrisons (takes one month).")
 async def move(interaction: discord.Interaction, location_id: int, troop_name: str, amount: int, target_land_id: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2005,7 +2005,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
 
 @client.tree.command(name="support", description="Lend your support to another player to improve one of their land's income by 10%.")
 async def support(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2049,7 +2049,7 @@ async def support(interaction: discord.Interaction, target_user_id: str):
     user["supportee_id"] = target_user_id
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have lent your support to {client.get_user(int(target_user_id))}.')
@@ -2057,10 +2057,10 @@ async def support(interaction: discord.Interaction, target_user_id: str):
 
 @client.tree.command(name="giveland", description="Give your occupied land to another player.")
 async def give_land(interaction: discord.Interaction, location_id: int, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     user_id = interaction.user.id
@@ -2113,10 +2113,10 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
     land["owner_id"] = int(target_user_id)
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    with open("./lands.json", "w") as file:
+    with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
     await interaction.response.send_message(f'You have given control of {land["name"]} to {client.get_user(int(target_user_id))}.')
@@ -2124,7 +2124,7 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
 
 @client.tree.command(name="addally", description="Add a user to your ally list.")
 async def add_ally(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2157,7 +2157,7 @@ async def add_ally(interaction: discord.Interaction, target_user_id: str):
     user["ally_ids"].append(target_user_id)
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have added  {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
@@ -2165,7 +2165,7 @@ async def add_ally(interaction: discord.Interaction, target_user_id: str):
 
 @client.tree.command(name="removeally", description="Remove a user to your ally list.")
 async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2192,7 +2192,7 @@ async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
     user["ally_ids"].remove(target_user_id)
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have removed {client.get_user(int(target_user_id))} from your allylist. Your ally list is now: {user["ally_ids"]}')
@@ -2200,7 +2200,7 @@ async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
 
 @client.tree.command(name="declareallegiance", description="Declare your allegiance to a user.")
 async def declare_allegiance(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2243,7 +2243,7 @@ async def declare_allegiance(interaction: discord.Interaction, target_user_id: s
     target["vassal_waitlist_ids"].append(user_id)
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have added yourself to {client.get_user(int(target_user_id))}\'s vassal waitlist. You must wait until they accept your allegiance.')
@@ -2251,7 +2251,7 @@ async def declare_allegiance(interaction: discord.Interaction, target_user_id: s
 
 @client.tree.command(name="acceptallegiance", description="Accept an oath of allegiance from a user.")
 async def accept_allegiance(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2275,7 +2275,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
         user["vassal_waitlist_ids"].remove(target_user_id)
 
         # Save to database
-        with open("./user_info.json", "w") as file:
+        with open("./data/user_info.json", "w") as file:
             json.dump(user_info, file, indent=4)
 
         await interaction.response.send_message(f'This user is already your vassal.')
@@ -2286,7 +2286,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
         user["vassal_waitlist_ids"].remove(target_user_id)
 
         # Save to database
-        with open("./user_info.json", "w") as file:
+        with open("./data/user_info.json", "w") as file:
             json.dump(user_info, file, indent=4)
 
         await interaction.response.send_message(f'This user already has a liege. They must renounce your oath before declaring their allegiance to someone else.')
@@ -2296,7 +2296,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
     target["liege_id"] = user_id
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have accepted {client.get_user(int(target_user_id))}\'s oath of allegiance.')
@@ -2304,7 +2304,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
 
 @client.tree.command(name="releasevassal", description="Release one of your vassals from their oath of allegiance.")
 async def release_vassal(interaction: discord.Interaction, target_user_id: str):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2331,7 +2331,7 @@ async def release_vassal(interaction: discord.Interaction, target_user_id: str):
     target["liege_id"] = 0
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have released {client.get_user(int(target_user_id))} from their oath of allegiance.')
@@ -2339,7 +2339,7 @@ async def release_vassal(interaction: discord.Interaction, target_user_id: str):
 
 @client.tree.command(name="renounceallegiance", description="Renounce your allegiance to your liege. THERE WILL BE CONSEQUENCES.")
 async def renounce_allegiance(interaction: discord.Interaction):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2364,7 +2364,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
         await interaction.response.send_message("You don't have a liege.")
         return
 
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -2438,10 +2438,10 @@ async def renounce_allegiance(interaction: discord.Interaction):
                                global_info["percentPlunderedOnOathbreaker"])
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    with open("./lands.json", "w") as file:
+    with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
     await interaction.response.send_message(f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
@@ -2449,7 +2449,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
 
 @client.tree.command(name="setvassaltax", description="Set a flat tax rate per land for all vassals.")
 async def set_vassal_tax(interaction: discord.Interaction, amount: int):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     with open("./global_info.json", "r") as file:
@@ -2477,7 +2477,7 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
     user["taxPerVassalLand"] = amount
 
     # Save to database
-    with open("./user_info.json", "w") as file:
+    with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
     await interaction.response.send_message(f'You have set a tax rate of {amount} per land for all your vassals.')
@@ -2533,7 +2533,7 @@ async def add_unit(army, unit, amount=-1):
 
 
 async def get_allied_vassals(user_id):
-    with open("./user_info.json", "r") as file:
+    with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user = user_info.get(str(user_id), "")
@@ -2547,7 +2547,7 @@ async def get_allied_vassals(user_id):
 
 
 async def get_troop(troop_name):
-    with open("./troops.json", "r") as file:
+    with open("./data/troops.json", "r") as file:
         troops = json.load(file)
 
     try:
@@ -2565,7 +2565,7 @@ async def get_troop(troop_name):
 
 
 async def get_building(building_name):
-    with open("./buildings.json", "r") as file:
+    with open("./data/buildings.json", "r") as file:
         buildings = json.load(file)
 
     try:
@@ -2583,7 +2583,7 @@ async def get_building(building_name):
 
 
 async def get_land(land_id):
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     land = lands.get(str(land_id), "")
@@ -2592,7 +2592,7 @@ async def get_land(land_id):
 
 
 async def get_land_by_name(land_name):
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     for land in lands:
@@ -2603,7 +2603,7 @@ async def get_land_by_name(land_name):
 
 
 async def get_land_id(query_land):
-    with open("./lands.json", "r") as file:
+    with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
     for land_id, land in lands.items():
@@ -2614,7 +2614,7 @@ async def get_land_id(query_land):
 
 
 async def get_species(species_name):
-    with open("./species.json", "r") as file:
+    with open("./data/species.json", "r") as file:
         species_list = json.load(file)
 
     try:
