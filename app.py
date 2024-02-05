@@ -25,7 +25,7 @@ async def dailyReset():
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     with open("./data/lands.json", "r") as file:
@@ -780,7 +780,7 @@ async def dailyReset():
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    with open("./global_info.json", "w") as file:
+    with open("./data/global_info.json", "w") as file:
         json.dump(global_info, file, indent=4)
 
     with open("./data/lands.json", "w") as file:
@@ -807,7 +807,7 @@ async def quack(interaction: discord.Interaction):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     user_id = interaction.user.id
@@ -920,7 +920,7 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     user_id = interaction.user.id
@@ -952,7 +952,7 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
 
 @client.tree.command(name="qqrate", description="Check the current quacks-quackerino exchange rate.")
 async def qq_rate(interaction: discord.Interaction):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     await interaction.response.send_message(f'Currently 1 quack can buy {global_info["qqExchangeRate"]} quackerinos.')
@@ -996,7 +996,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     if user_id == "":
@@ -1091,7 +1091,7 @@ async def raw_quack_info(interaction: discord.Interaction, user_id: str = ""):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     if user_id == "":
@@ -1150,7 +1150,7 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
 
 @client.tree.command(name="taskqueue", description="Check out the task queue.")
 async def view_task_queue(interaction: discord.Interaction):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     message = f'__**Task Queue**__'
@@ -1177,7 +1177,7 @@ async def view_task_queue(interaction: discord.Interaction):
 
 
 async def get_quack_rank(quacks):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     quack_rank = ""
@@ -1190,7 +1190,7 @@ async def get_quack_rank(quacks):
 
 
 async def get_next_quack_rank(quack_rank):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     next_quack_rank = ""
@@ -1213,7 +1213,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     user_id = interaction.user.id
@@ -1264,7 +1264,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
             json.dump(user_info, file, indent=4)
 
         # Save to database
-        with open("./global_info.json", "w") as file:
+        with open("./data/global_info.json", "w") as file:
             json.dump(global_info, file, indent=4)
 
         # Save to database
@@ -1681,7 +1681,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     troop = await get_troop(troop_name)
@@ -1752,7 +1752,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     troop = await get_troop(troop_name)
@@ -1836,7 +1836,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     troop = await get_troop(troop_name)
@@ -1901,7 +1901,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
         await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     troop = await get_troop(troop_name)
@@ -1984,7 +1984,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
         await interaction.response.send_message(f'You cannot move troops into the garrrison of {target_land["name"]} because it is fully surrounded.')
         return
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     troop = await get_troop(troop_name)
@@ -2367,7 +2367,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
     with open("./data/lands.json", "r") as file:
         lands = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     # Disband all deserting troops
@@ -2452,7 +2452,7 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     user_id = interaction.user.id
@@ -2648,7 +2648,7 @@ async def get_species(species_name):
 
 
 async def get_season(day):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     dayx = deepcopy(day)
@@ -2670,7 +2670,7 @@ async def get_unit(army, troop_name, user_id):
 
 
 async def resolve_battle(attack_army, defend_army, land=""):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     percent_casualties_attackers = 0
@@ -2845,7 +2845,7 @@ async def dm(user_id, message):
 
 
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
-    with open("./global_info.json", "r") as file:
+    with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
     task = {
@@ -2860,7 +2860,7 @@ async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, tar
 
     global_info["task_queue"].append(task)
 
-    with open("./global_info.json", "w") as file:
+    with open("./data/global_info.json", "w") as file:
         json.dump(global_info, file, indent=4)
 
 
