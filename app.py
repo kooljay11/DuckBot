@@ -107,7 +107,7 @@ async def dailyReset():
         user["supportee_id"] = 0
 
         # Reduce safety counter
-        if user["safety_count"] > 0:
+        if user["safety_count"] > 0 and user["homeland_id"] > 0:
             user["safety_count"] -= 1
 
     # Attempt to pay all the soldiers in each land
@@ -1027,12 +1027,19 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
         message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
 
         if user["homeland_id"] > 0:
-            homeland = await get_land(user["homeland_id"])
+            # homeland = await get_land(user["homeland_id"])
 
-            if homeland["owner_id"] == user_id:
-                message += f'This user is in control of their homeland.'
+            # if homeland["owner_id"] == user_id:
+            #     message += f'This user is in control of their homeland.'
+            # else:
+            #     message += f'This user is not in control of their homeland.'
+            if user["homeland_id"] in user["land_ids"]:
+                message += f'This user is in control of their homeland. '
             else:
-                message += f'This user is not in control of their homeland.'
+                message += f'This user is not in control of their homeland. '
+
+        if user["safety_count"] > 0:
+            message += f'This user has {user["safety_count"]} turns left of safety protection. '
 
         if user["liege_id"] != 0:
             message += f'\nLiege: {client.get_user(int(user["liege_id"]))} (ID:{user["liege_id"]})'
