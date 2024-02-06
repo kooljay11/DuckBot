@@ -6,3 +6,6 @@
 
 # venv files
 venv/*
+
+#Ignore all json files in the data folder
+data/
