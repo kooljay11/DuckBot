@@ -1309,17 +1309,18 @@ async def list_buildings(interaction: discord.Interaction):
 
 
 @client.tree.command(name="troops", description="View all the troops that can be hired.")
-async def list_troops(interaction: discord.Interaction):
+async def list_troops(interaction: discord.Interaction, species_name: str):
     with open("./data/troops.json", "r") as file:
         troops = json.load(file)
 
     message = f'__**All Troops**__'
 
     for troop_name, troop in troops.items():
-        message += f'\n**{troop_name}:** '
-        for key, value in troop.items():
-            if value != "":
-                message += f'{key}: {value}; '
+        if troop["species"] == species_name or troop["species"] == "":
+            message += f'\n**{troop_name}:** '
+            for key, value in troop.items():
+                if value != "":
+                    message += f'{key}: {value}; '
 
     await interaction.response.send_message(message)
 
