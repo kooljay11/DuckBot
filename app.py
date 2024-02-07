@@ -984,6 +984,9 @@ async def get_max_quacks(users):
 
     # Find the userId with the max quacks
     for userId, user in users.items():
+        if userId == "default":
+            continue
+
         if int(user["quacks"]) > quacks:
             quacks = int(user["quacks"])
             top_user_id = int(userId)
