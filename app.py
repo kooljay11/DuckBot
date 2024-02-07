@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=15, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=13, minute=0, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -971,7 +971,7 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
         if user_id == 0:
             break
 
-        top_list += f'\n{client.get_user(user_id)} --- {user_info[str(user_id)]["quacks"]}'
+        top_list += f'\n{client.get_user(int(user_id))} --- {user_info[str(user_id)]["quacks"]}'
         user_info.pop(str(user_id))
 
     await interaction.response.send_message(top_list)
