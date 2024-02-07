@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=14, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -767,6 +767,19 @@ async def dailyReset():
                 index += 1
         else:
             index += 1
+
+    # Update the quality of all the lands
+    for land_id, land in lands.items():
+        if land_id == "default":
+            continue
+
+        maxQuality = lands["default"]["maxQuality"]
+
+        for building_name in land["buildings"]:
+            building = await get_building(building_name)
+            maxQuality += building["maxQualityBonus"]
+
+        land["maxQuality"] = maxQuality
 
     # Randomize the q-qq exchange rate
     global_info["qqExchangeRate"] = random.randint(int(
