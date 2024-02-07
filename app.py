@@ -835,23 +835,7 @@ async def quack(interaction: discord.Interaction):
         else:
             message = f'{username} tried to quack but their throat is too sore today.'
     except:
-        new_user = {
-            "quacks": 1,
-            "quackStreak": 1,
-            "quackedToday": True,
-            "quackRank": "",
-            "spentQuacks": 0,
-            "quackerinos": 0,
-            "renown": 0,
-            "liege_id": 0,
-            "taxPerVassalLand": 0,
-            "homeland_id": -1,
-            "land_ids": [],
-            "mischief": False,
-            "species": "",
-            "party": [],
-            "siege_location_ids": []
-        }
+        new_user = deepcopy(user_info["default"])
         user_info[user_id] = new_user
         message = f'{username} quacked for the first time!'
 
