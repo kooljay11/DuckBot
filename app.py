@@ -727,7 +727,7 @@ async def dailyReset():
                     skip = True
                     break
                 else:
-                    next_building = await get_building(building["upgradesTo"])
+                    next_building = await get_building(upgradesTo)
                     upgradesTo = deepcopy(next_building["upgradesTo"])
             if skip:
                 continue
