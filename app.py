@@ -803,7 +803,7 @@ async def dailyReset():
     try:
         destination_channel = int(global_info["new_day_channel_id"])
         await client.get_channel(destination_channel).send(
-            "A new day has arrived and the ducks feel refreshed from their slumber.")
+            f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}')
     except:
         print('Error trying to execute the new day.')
 
