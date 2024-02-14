@@ -2378,6 +2378,11 @@ async def renounce_allegiance(interaction: discord.Interaction):
     with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
+    # Fail if this user doesn't have the required money to renounce allegiance
+    if user["quackerinos"] < global_info["qq_requirement_to_renounce"]:
+        await interaction.response.send_message(f'You don\'t have the required funds ({global_info["qq_requirement_to_renounce"]}) to renounce allegiance.')
+        return
+
     # Disband all deserting troops
     for land_id, land in lands.items():
         if land_id == "default":
