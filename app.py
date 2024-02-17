@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=17, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=20, minute=10, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -368,8 +368,7 @@ async def dailyReset():
                 # Resolve the combat
                 message = await resolve_battle(attacker_army, defender_army, target_land)
             else:
-                message = f'There were not enough troops for a battle at {
-                    target_land["name"]}.'
+                message = f'There were not enough troops for a battle at {target_land["name"]}.'
 
             # If the defender army is empty then transfer the land to the attacking side (and add this to the message)
             total_defenders = await get_total_troops(defender_army)
@@ -422,8 +421,7 @@ async def dailyReset():
                     target_land["owner_id"] = int(highest_user_id)
                     user_info[str(target_land["owner_id"])]["land_ids"].append(
                         task["target_land_id"])
-                    message += f'\n\n{target_land["name"]} has been taken by {
-                        client.get_user(int(target_land["owner_id"]))}.'
+                    message += f'\n\n{target_land["name"]} has been taken by {client.get_user(int(target_land["owner_id"]))}.'
 
                 message += f'\n{total_buildings_destroyed} buildings were burned.'
 
@@ -498,8 +496,7 @@ async def dailyReset():
                 # Resolve the combat
                 message = await resolve_battle(attacker_army, defender_army)
             else:
-                message = f'There were not enough troops for a battle at {
-                    target_land["name"]}.'
+                message = f'There were not enough troops for a battle at {target_land["name"]}.'
 
             # DM the results to all the combatants
             for user_id in user_ids:
@@ -628,8 +625,7 @@ async def dailyReset():
                         await remove_unit(land["garrison"], unit, action["amount"])
 
                         # Add the upgraded troop to the garrison
-                        new_unit = {
-                            "troop_name": troop["upgradesTo"], "amount": action["amount"], "user_id": action["user_id"]}
+                        new_unit = {"troop_name": troop["upgradesTo"], "amount": action["amount"], "user_id": action["user_id"]}
                         await add_unit(land["garrison"], new_unit)
 
                         # DM the results to the player
@@ -689,8 +685,7 @@ async def dailyReset():
             # land["quality"] -= land_quality_penalty
 
             # Add the troops to the garrison
-            new_unit = {
-                "troop_name": task["item"], "amount": task["amount"], "user_id": task["user_id"]}
+            new_unit = {"troop_name": task["item"], "amount": task["amount"], "user_id": task["user_id"]}
             await add_unit(land["garrison"], new_unit)
 
             # DM the results to the player
@@ -866,8 +861,7 @@ async def quack(interaction: discord.Interaction):
                 message += f'\n{username} finished a streak and got an extra {
                     global_info["quackStreakReward"]} quacks.'
         else:
-            message = f'{
-                username} tried to quack but their throat is too sore today.'
+            message = f'{username} tried to quack but their throat is too sore today.'
     except:
         new_user = deepcopy(user_info["default"])
         user_info[user_id] = new_user
@@ -963,8 +957,7 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    message = f'You bought {result} quackerinos using {quacks} quacks. You now have {
-        user["quackerinos"]} qq and {user["quacks"]-user["spentQuacks"]} unspent quacks.'
+    message = f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]-user["spentQuacks"]} unspent quacks.'
 
     await interaction.response.send_message(message)
 
@@ -990,8 +983,7 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
         if user_id == 0:
             break
 
-        top_list += f'\n{client.get_user(int(user_id))} ({user_id}) --- {
-            user_info[str(user_id)]["quacks"]}'
+        top_list += f'\n{client.get_user(int(user_id))} ({user_id}) --- {user_info[str(user_id)]["quacks"]}'
         user_info.pop(str(user_id))
 
     await interaction.response.send_message(top_list)
@@ -1037,8 +1029,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
         if user["quackRank"] != "":
             message += f' the {user["quackRank"]}'
 
-        message += f' has quacked {user["quacks"]
-                                   } times and is on a {user["quackStreak"]} day streak. '
+        message += f' has quacked {user["quacks"]} times and is on a {user["quackStreak"]} day streak. '
 
         next_rank = await get_next_quack_rank(user["quackRank"])
 
@@ -1046,11 +1037,9 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
             quacks = int(user["quacks"])
             next_quacks = int(global_info["quackRank"][next_rank])
 
-            message += f'They are {next_quacks -
-                                   quacks} quacks away from the next rank of {next_rank}. '
+            message += f'They are {next_quacks - quacks} quacks away from the next rank of {next_rank}. '
 
-        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {
-            user.get("quackerinos", 0)} quackerinos. '
+        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
 
         if user["homeland_id"] > 0:
             # homeland = await get_land(user["homeland_id"])
@@ -1065,12 +1054,10 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
                 message += f'This user is not in control of their homeland. '
 
         if user["safety_count"] > 0:
-            message += f'This user has {user["safety_count"]
-                                        } turns left of safety protection. '
+            message += f'This user has {user["safety_count"]} turns left of safety protection. '
 
         if user["liege_id"] != 0:
-            message += f'\nLiege: {client.get_user(int(user["liege_id"]))} (ID:{
-                user["liege_id"]})'
+            message += f'\nLiege: {client.get_user(int(user["liege_id"]))} (ID:{user["liege_id"]})'
 
         if len(user["ally_ids"]) > 0:
             message += f'\nAllies: '
@@ -1103,20 +1090,17 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
         for land_id in user["land_ids"]:
             land = await get_land(land_id)
 
-            message += f'\n\n**{land["name"]
-                                } (ID:{land_id}) - {land["species"]}**'
+            message += f'\n\n**{land["name"]} (ID:{land_id}) - {land["species"]}**'
             message += f'\nQuality: {land["quality"]}/{land["maxQuality"]}'
             message += f'\nBuildings: {land["buildings"]}'
             message += f'\nGarrison: '
             for unit in land["garrison"]:
-                message += f'\n• {unit["amount"]} {unit["troop_name"]
-                                                   } ({client.get_user(int(unit["user_id"]))})'
+                message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
             if land["siegeCamp"] != []:
                 message += f'\nSiege camp: '
                 for unit in land["siegeCamp"]:
-                    message += f'\n• {unit["amount"]} {unit["troop_name"]
-                                                       } ({client.get_user(int(unit["user_id"]))})'
+                    message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     except:
         message = 'Error while fetching user information.'
@@ -1171,20 +1155,17 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
 
     # Display the land info
     message = f'**{land["name"]} (ID: {land_id}) - {land["species"]}**'
-    message += f'\nOwner: {client.get_user(int(land["owner_id"]))} (ID: {
-        land["owner_id"]})'
+    message += f'\nOwner: {client.get_user(int(land["owner_id"]))} (ID: {land["owner_id"]})'
     message += f'\nQuality: {land["quality"]}/{land["maxQuality"]}'
     message += f'\nBuildings: {land["buildings"]}'
     message += f'\nGarrison: '
     for unit in land["garrison"]:
-        message += f'\n• {unit["amount"]} {unit["troop_name"]
-                                           } ({client.get_user(int(unit["user_id"]))})'
+        message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     if land["siegeCamp"] != []:
         message += f'\nSiege camp: '
         for unit in land["siegeCamp"]:
-            message += f'\n• {unit["amount"]} {unit["troop_name"]
-                                               } ({client.get_user(int(unit["user_id"]))})'
+            message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
     await interaction.response.send_message(message)
 
@@ -1198,8 +1179,7 @@ async def view_task_queue(interaction: discord.Interaction):
 
     for task in global_info["task_queue"]:
         land = await get_land(task["location_id"])
-        message += f'\n{client.get_user(int(task["user_id"]))} @ {
-            land["name"]} ({task["location_id"]})'
+        message += f'\n{client.get_user(int(task["user_id"]))} @ {land["name"]} ({task["location_id"]})'
 
         if task["target_land_id"] > 0:
             target = await get_land(task["target_land_id"])
@@ -1327,8 +1307,7 @@ async def list_species(interaction: discord.Interaction):
 
     for species_name, species in species_list.items():
         if bool(species.get("enabled", species_list["default"].get("enabled"))):
-            message += f'\n{species_name}: {
-                species.get("description", species)}'
+            message += f'\n{species_name}: {species.get("description", species)}'
 
     await interaction.response.send_message(message)
 
@@ -1471,11 +1450,9 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     # Add the lower tier building if necessary
     if building["demolishedTo"] != "":
         land["buildings"].append(building["demolishedTo"])
-        message = f'The {building_name} was demolished into a {
-            building["demolishedTo"]} and you were refunded {refund} qq.'
+        message = f'The {building_name} was demolished into a {building["demolishedTo"]} and you were refunded {refund} qq.'
     else:
-        message = f'The {
-            building_name} was destroyed and you were refunded {refund} qq.'
+        message = f'The {building_name} was destroyed and you were refunded {refund} qq.'
 
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -1651,8 +1628,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     refund = troop["refundPercentOnDisband"] * troop["cost"] * amount
     user["quackerinos"] += refund
 
-    message = f'{amount} {troop_name}s were disbanded. {
-        refund} qq were refunded to the user.'
+    message = f'{amount} {troop_name}s were disbanded. {refund} qq were refunded to the user.'
 
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -1748,8 +1724,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
     await dm(target_land["owner_id"], f'{client.get_user(int(user_id))} has sent {amount} {troop_name}s to attack {target_land["name"]}!')
 
-    message = f'{amount} {troop_name}s were sent to attack {
-        target_land["name"]}.'
+    message = f'{amount} {troop_name}s were sent to attack {target_land["name"]}.'
 
     await interaction.response.send_message(message)
 
@@ -1819,8 +1794,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     # Add the task to the queue
     await add_to_queue(user_id, "defend", troop_name, location_id, amount, target_land=target_land_id)
 
-    message = f'{amount} {troop_name}s were sent to defend {
-        target_land["name"]}.'
+    message = f'{amount} {troop_name}s were sent to defend {target_land["name"]}.'
 
     await interaction.response.send_message(message)
 
@@ -1904,8 +1878,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
     # Add the task to the queue
     await add_to_queue(user_id, "siege", troop_name, location_id, amount, target_land=target_land_id)
 
-    message = f'{amount} {troop_name}s were sent to siege {
-        target_land["name"]}.'
+    message = f'{amount} {troop_name}s were sent to siege {target_land["name"]}.'
 
     await interaction.response.send_message(message)
 
@@ -1970,8 +1943,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
     # Add the task to the queue
     await add_to_queue(user_id, "sallyout", troop_name, location_id, amount, target_land=target_land_id)
 
-    message = f'{amount} {troop_name}s were sent to attack the siege camp at {
-        target_land["name"]}.'
+    message = f'{amount} {troop_name}s were sent to attack the siege camp at {target_land["name"]}.'
 
     await interaction.response.send_message(message)
 
@@ -2054,8 +2026,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     # Add the task to the queue
     await add_to_queue(user_id, "move", troop_name, location_id, amount, target_land=target_land_id)
 
-    message = f'{amount} {troop_name}s were sent to {
-        target_land["name"]}\'s garrison.'
+    message = f'{amount} {troop_name}s were sent to {target_land["name"]}\'s garrison.'
 
     await interaction.response.send_message(message)
 
@@ -2858,8 +2829,7 @@ async def resolve_battle(attack_army, defend_army, land=""):
 async def print_army(army_collection):
     message = ""
     for company in army_collection:
-        message += f'\n{company["amount"]} {company["unit"]["troop_name"]
-                                            } ({client.get_user(int(company["unit"]["user_id"]))})'
+        message += f'\n{company["amount"]} {company["unit"]["troop_name"]} ({client.get_user(int(company["unit"]["user_id"]))})'
     return message
 
 
