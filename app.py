@@ -658,6 +658,19 @@ async def dailyReset():
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
+            # Get the amount that the land quality decreases by
+            troop_counter = 0
+            land_quality_penalty = 0
+
+            while troop_counter < task["amount"]:
+                if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
+                    land_quality_penalty += 1
+
+                if land_quality_penalty >= land["quality"]:
+                    task["amount"] = troop_counter
+                    break
+                troop_counter += 1
+
             cost = troop["cost"] * task["amount"]
 
             # Fail if not enough money
@@ -668,6 +681,9 @@ async def dailyReset():
 
             # Remove the money
             user["quackerinos"] -= cost
+
+            # Remove the land quality
+            land["quality"] -= land_quality_penalty
 
             # Add the troops to the garrison
             new_unit = {
@@ -1494,6 +1510,11 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
         await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
         return
 
+    # Fail if the land quality is 0
+    if land["quality"] <= 0 and bool(troop["requiresSpeciesMatch"]):
+        await interaction.response.send_message('You cannot hire troops from a land that has zero quality.')
+        return
+
     # Add the task to the queue
     await add_to_queue(user_id, "hire", troop_name, location_id, amount)
 
@@ -2168,7 +2189,7 @@ async def add_ally(interaction: discord.Interaction, target_user_id: str):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have added  {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
+    await interaction.response.send_message(f'You have added {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
 
 
 @client.tree.command(name="removeally", description="Remove a user to your ally list.")
