@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=20, minute=10, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=20, minute=18, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -858,8 +858,7 @@ async def quack(interaction: discord.Interaction):
             if user["quackStreak"] >= global_info["maxQuackStreakLength"]:
                 user["quackStreak"] -= global_info["maxQuackStreakLength"]
                 user["quacks"] += global_info["quackStreakReward"]
-                message += f'\n{username} finished a streak and got an extra {
-                    global_info["quackStreakReward"]} quacks.'
+                message += f'\n{username} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
         else:
             message = f'{username} tried to quack but their throat is too sore today.'
     except:
