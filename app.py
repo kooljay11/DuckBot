@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=16, minute=25, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=17, minute=0, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -662,8 +662,8 @@ async def dailyReset():
                 continue
 
             # Get the amount that the land quality decreases by
-            troop_counter = 0
-            land_quality_penalty = 0
+            # troop_counter = 0
+            # land_quality_penalty = 0
 
             # while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
             #     if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
@@ -686,7 +686,7 @@ async def dailyReset():
             user["quackerinos"] -= cost
 
             # Remove the land quality
-            land["quality"] -= land_quality_penalty
+            # land["quality"] -= land_quality_penalty
 
             # Add the troops to the garrison
             new_unit = {
