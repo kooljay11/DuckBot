@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=16, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=16, minute=20, tzinfo=datetime.timezone.utc)])
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -509,7 +509,7 @@ async def dailyReset():
 
     index = 0
 
-    # Execute all move commands
+    # Execute all move commands.
     while index < len(global_info["task_queue"]):
         task = global_info["task_queue"][index]
 
