@@ -665,14 +665,14 @@ async def dailyReset():
             troop_counter = 0
             land_quality_penalty = 0
 
-            while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
-                if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
-                    land_quality_penalty += 1
+            # while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
+            #     if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
+            #         land_quality_penalty += 1
 
-                if land_quality_penalty >= land["quality"]:
-                    task["amount"] = troop_counter
-                    break
-                troop_counter += 1
+            #     if land_quality_penalty >= land["quality"]:
+            #         task["amount"] = troop_counter
+            #         break
+            #     troop_counter += 1
 
             cost = troop["cost"] * task["amount"]
 
