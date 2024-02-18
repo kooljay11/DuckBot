@@ -787,6 +787,16 @@ async def dailyReset():
         else:
             index += 1
 
+    index = 0
+    
+    # Remove all stale commands that aren't build commands
+    while index < len(global_info["task_queue"]):
+        if task["task"] != "build":
+            global_info["task_queue"].pop(index)
+        else:
+            index += 1
+
+
     # Update the quality of all the lands
     for land_id, land in lands.items():
         if land_id == "default":
