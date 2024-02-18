@@ -891,7 +891,7 @@ async def quack(interaction: discord.Interaction):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="pay", description="Give a player some quackerinos.")
@@ -905,35 +905,35 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
         if user == target:
-            await interaction.response.send_message("You can't give quackerinos to yourself.")
+            await reply(interaction, "You can't give quackerinos to yourself.")
             return
         elif target_user_id == "default":
-            await interaction.response.send_message("You can't give quackerinos to the default user.")
+            await reply(interaction, "You can't give quackerinos to the default user.")
             return
 
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Make sure the player can't give negative quackerinos
     if number < 1:
-        await interaction.response.send_message("Nice try.")
+        await reply(interaction, "Nice try.")
         return
 
     # Make sure the player can't give more quackerinos than they have
     try:
         if int(user["quackerinos"]) < number:
-            await interaction.response.send_message("You don't have enough quackerinos for that.")
+            await reply(interaction, "You don't have enough quackerinos for that.")
             return
     except:
-        await interaction.response.send_message("You don't have enough quackerinos for that.")
+        await reply(interaction, "You don't have enough quackerinos for that.")
         return
 
     # Give the other player quackerinos, but check if they have the quackerinos attribute yet
@@ -944,7 +944,7 @@ async def pay(interaction: discord.Interaction, target_user_id: str, number: int
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You transferred {number} quackerinos to {client.get_user(int(target_user_id))}. They now have {target["quackerinos"]} qq and you now have {user["quackerinos"]} qq.')
+    await reply(interaction, f'You transferred {number} quackerinos to {client.get_user(int(target_user_id))}. They now have {target["quackerinos"]} qq and you now have {user["quackerinos"]} qq.')
 
 
 @client.tree.command(name="buyqq", description="Trade in some of your quacks for quackerinos.")
@@ -961,12 +961,12 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the player has enough quacks
     if int(user["quacks"]) - int(user["spentQuacks"]) < quacks:
-        await interaction.response.send_message("You don't have enough quacks for that.")
+        await reply(interaction, "You don't have enough quacks for that.")
         return
 
     user["spentQuacks"] += quacks
@@ -979,7 +979,7 @@ async def buy_qq(interaction: discord.Interaction, quacks: int):
 
     message = f'You bought {result} quackerinos using {quacks} quacks. You now have {user["quackerinos"]} qq and {user["quacks"]-user["spentQuacks"]} unspent quacks.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="qqrate", description="Check the current quacks-quackerino exchange rate.")
@@ -987,7 +987,7 @@ async def qq_rate(interaction: discord.Interaction):
     with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
-    await interaction.response.send_message(f'Currently 1 quack can buy {global_info["qqExchangeRate"]} quackerinos.')
+    await reply(interaction, f'Currently 1 quack can buy {global_info["qqExchangeRate"]} quackerinos.')
 
 
 @client.tree.command(name="quackery", description="Check out who are the top quackers.")
@@ -1006,7 +1006,7 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
         top_list += f'\n{client.get_user(int(user_id))} ({user_id}) --- {user_info[str(user_id)]["quacks"]}'
         user_info.pop(str(user_id))
 
-    await interaction.response.send_message(top_list)
+    await reply(interaction, top_list)
 
 
 # Return user id of the user with the most quacks
@@ -1041,7 +1041,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("That user has not quacked yet.")
+        await reply(interaction, "That user has not quacked yet.")
         return
 
     try:
@@ -1125,7 +1125,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
     except:
         message = 'Error while fetching user information.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="rawquackinfo", description="Check out the raw quack info of a user.")
@@ -1143,7 +1143,7 @@ async def raw_quack_info(interaction: discord.Interaction, user_id: str = ""):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("That user has not quacked yet.")
+        await reply(interaction, "That user has not quacked yet.")
         return
 
     try:
@@ -1151,14 +1151,14 @@ async def raw_quack_info(interaction: discord.Interaction, user_id: str = ""):
     except:
         message = 'Error while fetching user information.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="landinfo", description="Check out the info on a certain land.")
 async def land_info(interaction: discord.Interaction, land_id: int = 0, land_name: str = ""):
     # Fail if both fields are empty
     if land_id == 0 and land_name == "":
-        await interaction.response.send_message("You need to put in either a land id or land name.")
+        await reply(interaction, "You need to put in either a land id or land name.")
         return
 
     land = await get_land(land_id)
@@ -1168,7 +1168,7 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
         land = await get_land_by_name(land_name)
         print(f'land: {land}')
         if land == "":
-            await interaction.response.send_message("Land not found.")
+            await reply(interaction, "Land not found.")
             return
 
     land_id = await get_land_id(land)
@@ -1187,7 +1187,7 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
         for unit in land["siegeCamp"]:
             message += f'\n• {unit["amount"]} {unit["troop_name"]} ({client.get_user(int(unit["user_id"]))})'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="taskqueue", description="Check out the task queue.")
@@ -1215,7 +1215,7 @@ async def view_task_queue(interaction: discord.Interaction):
         if task["time"] > 1:
             message += f' (turns remaining: {task["time"]})'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 async def get_quack_rank(quacks):
@@ -1264,22 +1264,22 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the species exists and is enabled
     species = await get_species(species_name)
     if species != "":
         if not bool(species["enabled"]):
-            await interaction.response.send_message("This species is not enabled.")
+            await reply(interaction, "This species is not enabled.")
             return
     else:
-        await interaction.response.send_message("Species not found.")
+        await reply(interaction, "Species not found.")
         return
 
     # Make sure this player hasn't made a homeland already
     if user.get("homeland_id", -1) >= 0:
-        await interaction.response.send_message("You already have a homeland.")
+        await reply(interaction, "You already have a homeland.")
         return
 
     with open("./data/lands.json", "r") as file:
@@ -1315,7 +1315,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     except:
         message = 'There was an error trying to add the new land.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="species", description="View all the enabled species.")
@@ -1329,7 +1329,7 @@ async def list_species(interaction: discord.Interaction):
         if bool(species.get("enabled", species_list["default"].get("enabled"))):
             message += f'\n{species_name}: {species.get("description", species)}'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="buildings", description="View all the buildings that can be built.")
@@ -1347,7 +1347,7 @@ async def list_buildings(interaction: discord.Interaction):
                 if key != "enabled":
                     message += f'{key}: {value}; '
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="troops", description="View all the troops that can be hired.")
@@ -1364,7 +1364,7 @@ async def list_troops(interaction: discord.Interaction, species_name: str):
                 if value != "":
                     message += f'{key}: {value}; '
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="build", description="Build a new building in one of your lands (takes one month).")
@@ -1378,7 +1378,7 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     building = await get_building(building_name)
@@ -1386,22 +1386,22 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
 
     # Fail if building doesn't exist
     if building == "" or not bool(building["enabled"]):
-        await interaction.response.send_message('Building not found.')
+        await reply(interaction, 'Building not found.')
         return
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if the building has already been built on that land
     if building_name in land["buildings"]:
-        await interaction.response.send_message('That building has already been built there.')
+        await reply(interaction, 'That building has already been built there.')
         return
 
     # Fail if the building has to be upgraded to and is missing their requirement
@@ -1413,13 +1413,13 @@ async def build(interaction: discord.Interaction, location_id: int, building_nam
                 requirement = True
                 break
         if not requirement:
-            await interaction.response.send_message('That building needs to be built by upgrading a lower tier one.')
+            await reply(interaction, 'That building needs to be built by upgrading a lower tier one.')
             return
 
     # Add it to the queue
     await add_to_queue(user_id, "build", building_name, location_id, time=building["constructionTime"])
 
-    await interaction.response.send_message(f'{client.get_user(user_id)} has started building a {building_name} at {land["name"]}.')
+    await reply(interaction, f'{client.get_user(user_id)} has started building a {building_name} at {land["name"]}.')
 
 
 @client.tree.command(name="demolish", description="Destroy a building in one of your lands.")
@@ -1436,7 +1436,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     building = await get_building(building_name)
@@ -1444,22 +1444,22 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
 
     # Fail if building doesn't exist
     if building == "":
-        await interaction.response.send_message('Building not found.')
+        await reply(interaction, 'Building not found.')
         return
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if that building has not been built on that land yet
     if building_name not in land["buildings"]:
-        await interaction.response.send_message('That building has not been built there yet.')
+        await reply(interaction, 'That building has not been built there yet.')
         return
 
     # Remove the building from that land and give the user a percent of the money
@@ -1480,7 +1480,7 @@ async def demolish(interaction: discord.Interaction, location_id: int, building_
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="hire", description="Hire some troops (takes one month).")
@@ -1497,7 +1497,7 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     troop = await get_troop(troop_name)
@@ -1506,38 +1506,38 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
 
     # Fail if troop doesn't exist
     if troop == "" or troop == "default_tier1":
-        await interaction.response.send_message('Troop not found.')
+        await reply(interaction, 'Troop not found.')
         return
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if that troop doesn't match the species of the land
     if bool(troop["requiresSpeciesMatch"]) and troop["species"] != land["species"]:
-        await interaction.response.send_message('You can\'t hire that troop there.')
+        await reply(interaction, 'You can\'t hire that troop there.')
         return
 
     # Fail if that troop requires upgrading and can't be hired directly
     if bool(troop["fromUpgradeOnly"]):
-        await interaction.response.send_message('That troop requires that you upgrade from a lower tier.')
+        await reply(interaction, 'That troop requires that you upgrade from a lower tier.')
         return
 
     # Fail if the land quality is 0
     if land["quality"] <= 0 and bool(troop["requiresSpeciesMatch"]):
-        await interaction.response.send_message('You cannot hire troops from a land that has zero quality.')
+        await reply(interaction, 'You cannot hire troops from a land that has zero quality.')
         return
 
     # Add the task to the queue
     await add_to_queue(user_id, "hire", troop_name, location_id, amount)
 
-    await interaction.response.send_message(f'You have started to hire {amount} {troop_name}s in {land["name"]}.')
+    await reply(interaction, f'You have started to hire {amount} {troop_name}s in {land["name"]}.')
 
 
 @client.tree.command(name="upgrade", description="Upgrade some troops (takes one month).")
@@ -1551,7 +1551,7 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     troop = await get_troop(troop_name)
@@ -1560,35 +1560,35 @@ async def upgrade(interaction: discord.Interaction, location_id: int, troop_name
 
     # Fail if troop doesn't exist
     if troop == "":
-        await interaction.response.send_message('Troop not found.')
+        await reply(interaction, 'Troop not found.')
         return
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if that troop can't be upgraded
     if troop["upgradesTo"] == "":
-        await interaction.response.send_message('That troop can\'t be upgraded.')
+        await reply(interaction, 'That troop can\'t be upgraded.')
         return
 
     unit = await get_unit(land["garrison"], troop_name, user_id)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
-        await interaction.response.send_message(f'You don\'t have enough of that troop to upgrade {amount} of them.')
+        await reply(interaction, f'You don\'t have enough of that troop to upgrade {amount} of them.')
         return
 
     # Add the task to the queue
     await add_to_queue(user_id, "upgrade", troop_name, location_id, amount)
 
-    await interaction.response.send_message(f'You have started to upgrade {amount} {troop_name}s in {land["name"]}.')
+    await reply(interaction, f'You have started to upgrade {amount} {troop_name}s in {land["name"]}.')
 
 
 @client.tree.command(name="disband", description="Disband some of your troops.")
@@ -1605,7 +1605,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     troop = await get_troop(troop_name)
@@ -1613,29 +1613,29 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
 
     # Fail if troop doesn't exist
     if troop == "":
-        await interaction.response.send_message('Troop not found.')
+        await reply(interaction, 'Troop not found.')
         return
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if that troop doesn't match the species of the land
     if bool(troop["requiresSpeciesMatch"]) and troop["species"] != land["species"]:
-        await interaction.response.send_message('You can\'t hire that troop there.')
+        await reply(interaction, 'You can\'t hire that troop there.')
         return
 
     unit = await get_unit(land["garrison"], troop_name, user_id)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
-        await interaction.response.send_message(f'You don\'t have enough of that troop to disband {amount} of them.')
+        await reply(interaction, f'You don\'t have enough of that troop to disband {amount} of them.')
         return
 
     # Remove troops from that user's land
@@ -1656,7 +1656,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="attack", description="Launch an assault on someone's land/castle (takes one month).")
@@ -1670,12 +1670,12 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1683,24 +1683,24 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the other land doesn't exist
     if target_land == "":
-        await interaction.response.send_message('Target land doesn\'t exist.')
+        await reply(interaction, 'Target land doesn\'t exist.')
         return
 
     target_user = user_info[str(target_land["owner_id"])]
 
     # Prevent this player from attacking someone who is in their safety period
     if target_user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action against someone who is still in their safety period.")
+        await reply(interaction, "You cannot use this action against someone who is still in their safety period.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1709,24 +1709,24 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     if unit == "" or unit["amount"] < amount:
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
-            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            await reply(interaction, f'You don\'t have enough of that troop from that location to send on an attack.')
             return
 
     # Fail if the target land is yours
     if target_land["owner_id"] == user_id:
-        await interaction.response.send_message(f'You can\'t attack yourself.')
+        await reply(interaction, f'You can\'t attack yourself.')
         return
 
     ally_vassals = await get_allied_vassals(user_id)
 
     # Fail if the target is the liege or vassal of your liege or your vassal
     if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
-        await interaction.response.send_message(f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+        await reply(interaction, f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
         return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land) and land != target_land:
-        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     with open("./data/global_info.json", "r") as file:
@@ -1737,7 +1737,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
 
     # Fail if the troop can't move during this season
     if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
-        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue and alert the defender
@@ -1746,7 +1746,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
 
     message = f'{amount} {troop_name}s were sent to attack {target_land["name"]}.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="defend", description="Defend someone's land/castle from an incoming assault (takes one month).")
@@ -1760,12 +1760,12 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1773,7 +1773,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1782,22 +1782,22 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     if unit == "" or unit["amount"] < amount:
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
-            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            await reply(interaction, f'You don\'t have enough of that troop from that location to send on an attack.')
             return
 
     # Fail if the other land doesn't exist
     if target_land == "":
-        await interaction.response.send_message('Target land doesn\'t exist.')
+        await reply(interaction, 'Target land doesn\'t exist.')
         return
 
     # Fail if they are both the same land
     if location_id == target_land_id:
-        await interaction.response.send_message('You don\'t need to use this command for troops in the garrison of a land being attacked.')
+        await reply(interaction, 'You don\'t need to use this command for troops in the garrison of a land being attacked.')
         return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land):
-        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     with open("./data/global_info.json", "r") as file:
@@ -1808,7 +1808,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
 
     # Fail if the troop can't move during this season
     if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
-        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -1816,7 +1816,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
 
     message = f'{amount} {troop_name}s were sent to defend {target_land["name"]}.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="siege", description="Initiate or join a siege on someone's land (takes one month).")
@@ -1830,12 +1830,12 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1843,19 +1843,19 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the other land doesn't exist
     if target_land == "":
-        await interaction.response.send_message('Target land doesn\'t exist.')
+        await reply(interaction, 'Target land doesn\'t exist.')
         return
 
     target_user = user_info[str(target_land["owner_id"])]
 
     # Prevent this player from attacking someone who is in their safety period
     if target_user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action against someone who is still in their safety period.")
+        await reply(interaction, "You cannot use this action against someone who is still in their safety period.")
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1864,24 +1864,24 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
     if unit == "" or unit["amount"] < amount:
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
-            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send to the siege camp.')
+            await reply(interaction, f'You don\'t have enough of that troop from that location to send to the siege camp.')
             return
 
     # Fail if the target land is yours
     if target_land["owner_id"] == user_id:
-        await interaction.response.send_message(f'You can\'t siege yourself.')
+        await reply(interaction, f'You can\'t siege yourself.')
         return
 
     ally_vassals = await get_allied_vassals(user_id)
 
     # Fail if the target is the liege or vassal of your liege or your vassal
     if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
-        await interaction.response.send_message(f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+        await reply(interaction, f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
         return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land):
-        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     with open("./data/global_info.json", "r") as file:
@@ -1892,7 +1892,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
 
     # Fail if the troop can't move during this season
     if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
-        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -1900,7 +1900,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
 
     message = f'{amount} {troop_name}s were sent to siege {target_land["name"]}.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="sallyout", description="Launch an assault on a siege camp (takes one month).")
@@ -1914,12 +1914,12 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1927,12 +1927,12 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the other land doesn't exist
     if target_land == "":
-        await interaction.response.send_message('Target land doesn\'t exist.')
+        await reply(interaction, 'Target land doesn\'t exist.')
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -1941,12 +1941,12 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
     if unit == "" or unit["amount"] < amount:
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
-            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send on an attack.')
+            await reply(interaction, f'You don\'t have enough of that troop from that location to send on an attack.')
             return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land) and land != target_land:
-        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     with open("./data/global_info.json", "r") as file:
@@ -1957,7 +1957,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
 
     # Fail if the troop can't move during this season
     if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
-        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -1965,7 +1965,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
 
     message = f'{amount} {troop_name}s were sent to attack the siege camp at {target_land["name"]}.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="move", description="Move troops to one of your or an ally's garrisons (takes one month).")
@@ -1979,12 +1979,12 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent this player from using this action if they still are in the safety period
     if user["safety_count"] > 0:
-        await interaction.response.send_message("You cannot use this action during your safety period.")
+        await reply(interaction, "You cannot use this action during your safety period.")
         return
 
     land = await get_land(location_id)
@@ -1992,12 +1992,12 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the other land doesn't exist
     if target_land == "":
-        await interaction.response.send_message('Target land doesn\'t exist.')
+        await reply(interaction, 'Target land doesn\'t exist.')
         return
 
     unit = await get_unit(land["siegeCamp"], troop_name, user_id)
@@ -2006,12 +2006,12 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     if unit == "" or unit["amount"] < amount:
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
-            await interaction.response.send_message(f'You don\'t have enough of that troop from that location to send to {target_land["name"]}.')
+            await reply(interaction, f'You don\'t have enough of that troop from that location to send to {target_land["name"]}.')
             return
 
     # Fail if they are both the same land
     if location_id == target_land_id:
-        await interaction.response.send_message('The developers stopped you from taking a useless action.')
+        await reply(interaction, 'The developers stopped you from taking a useless action.')
         return
 
     ally_vassals = await get_allied_vassals(user_id)
@@ -2019,17 +2019,17 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
     if target_land["owner_id"] != user_id:
         if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
-            await interaction.response.send_message(f'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
+            await reply(interaction, f'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
             return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land):
-        await interaction.response.send_message(f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops out of {land["name"]} because it is fully surrounded.')
         return
 
     # Fail if the target land is already surrounded
     if await is_surrounded(target_land):
-        await interaction.response.send_message(f'You cannot move troops into the garrrison of {target_land["name"]} because it is fully surrounded.')
+        await reply(interaction, f'You cannot move troops into the garrrison of {target_land["name"]} because it is fully surrounded.')
         return
 
     with open("./data/global_info.json", "r") as file:
@@ -2040,7 +2040,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
 
     # Fail if the troop can't move during this season
     if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
-        await interaction.response.send_message(f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
+        await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
     # Add the task to the queue
@@ -2048,7 +2048,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
 
     message = f'{amount} {troop_name}s were sent to {target_land["name"]}\'s garrison.'
 
-    await interaction.response.send_message(message)
+    await reply(interaction, message)
 
 
 @client.tree.command(name="support", description="Lend your support to another player to improve one of their land's income by 10%.")
@@ -2062,35 +2062,35 @@ async def support(interaction: discord.Interaction, target_user_id: str):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
         if user == target:
-            await interaction.response.send_message("You can't give support to yourself.")
+            await reply(interaction, "You can't give support to yourself.")
             return
         elif target_user_id == "default":
-            await interaction.response.send_message("You can't give support to the default user.")
+            await reply(interaction, "You can't give support to the default user.")
             return
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Make sure this user has already had a homeland
     if user["homeland_id"] == -1:
-        await interaction.response.send_message("You cannot use this command without a homeland.")
+        await reply(interaction, "You cannot use this command without a homeland.")
         return
 
     # Make sure this user has no lands
     if len(user["land_ids"]) > 0:
-        await interaction.response.send_message("You cannot use this command if you already have lands.")
+        await reply(interaction, "You cannot use this command if you already have lands.")
         return
 
     # Make sure the user hasn't supported anyone yet
     if user["supportee_id"] == 0:
-        await interaction.response.send_message("You can only use this command once per day.")
+        await reply(interaction, "You can only use this command once per day.")
         return
 
     target["support"] += 1
@@ -2100,7 +2100,7 @@ async def support(interaction: discord.Interaction, target_user_id: str):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have lent your support to {client.get_user(int(target_user_id))}.')
+    await reply(interaction, f'You have lent your support to {client.get_user(int(target_user_id))}.')
 
 
 @client.tree.command(name="giveland", description="Give your occupied land to another player.")
@@ -2117,42 +2117,42 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
         if user == target:
-            await interaction.response.send_message("You can't give support to yourself.")
+            await reply(interaction, "You can't give support to yourself.")
             return
         elif target_user_id == "default":
-            await interaction.response.send_message("You can't give support to the default user.")
+            await reply(interaction, "You can't give support to the default user.")
             return
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     land = lands.get(str(location_id), "")
 
     # Fail if the specified land doesn't exist
     if land == "":
-        await interaction.response.send_message('Land not found.')
+        await reply(interaction, 'Land not found.')
         return
 
     # Fail if the specified land doesn't belong to that player
     if location_id not in user["land_ids"]:
-        await interaction.response.send_message('That land doesn\'t belong to you.')
+        await reply(interaction, 'That land doesn\'t belong to you.')
         return
 
     # Fail if this is the user's homeland
     if location_id == user["homeland_id"]:
-        await interaction.response.send_message('You cannot give your homeland away.')
+        await reply(interaction, 'You cannot give your homeland away.')
         return
 
     # Prevent this player from giving the land to someone who is in their safety period
     if target["safety_count"] > 0:
-        await interaction.response.send_message("You cannot give lands to a protected user.")
+        await reply(interaction, "You cannot give lands to a protected user.")
         return
 
     # Give the land to the target user
@@ -2167,7 +2167,7 @@ async def give_land(interaction: discord.Interaction, location_id: int, target_u
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
-    await interaction.response.send_message(f'You have given control of {land["name"]} to {client.get_user(int(target_user_id))}.')
+    await reply(interaction, f'You have given control of {land["name"]} to {client.get_user(int(target_user_id))}.')
 
 
 @client.tree.command(name="addally", description="Add a user to your ally list.")
@@ -2181,25 +2181,25 @@ async def add_ally(interaction: discord.Interaction, target_user_id: str):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
         if user == target:
-            await interaction.response.send_message("You can't ally yourself.")
+            await reply(interaction, "You can't ally yourself.")
             return
         elif target_user_id == "default":
-            await interaction.response.send_message("You can't ally with the default user.")
+            await reply(interaction, "You can't ally with the default user.")
             return
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if target user already is in your ally list
     if target_user_id in user["ally_ids"]:
-        await interaction.response.send_message(f'You have already allied with that person. Your ally list is: {user["ally_ids"]}')
+        await reply(interaction, f'You have already allied with that person. Your ally list is: {user["ally_ids"]}')
         return
 
     user["ally_ids"].append(target_user_id)
@@ -2208,7 +2208,7 @@ async def add_ally(interaction: discord.Interaction, target_user_id: str):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have added {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
+    await reply(interaction, f'You have added {client.get_user(int(target_user_id))} to your allylist. Your ally list is now: {user["ally_ids"]}')
 
 
 @client.tree.command(name="removeally", description="Remove a user to your ally list.")
@@ -2222,19 +2222,19 @@ async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if target user is not in your ally list
     if target_user_id not in user["ally_ids"]:
-        await interaction.response.send_message(f'You aren\'t allied with that person. Your ally list is: {user["ally_ids"]}')
+        await reply(interaction, f'You aren\'t allied with that person. Your ally list is: {user["ally_ids"]}')
         return
 
     user["ally_ids"].remove(target_user_id)
@@ -2243,7 +2243,7 @@ async def remmove_ally(interaction: discord.Interaction, target_user_id: str):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have removed {client.get_user(int(target_user_id))} from your allylist. Your ally list is now: {user["ally_ids"]}')
+    await reply(interaction, f'You have removed {client.get_user(int(target_user_id))} from your allylist. Your ally list is now: {user["ally_ids"]}')
 
 
 @client.tree.command(name="declareallegiance", description="Declare your allegiance to a user.")
@@ -2257,35 +2257,35 @@ async def declare_allegiance(interaction: discord.Interaction, target_user_id: s
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
         if user == target:
-            await interaction.response.send_message("You can't declare allegiance to yourself.")
+            await reply(interaction, "You can't declare allegiance to yourself.")
             return
         elif target_user_id == "default":
-            await interaction.response.send_message("You can't declare allegiance to  the default user.")
+            await reply(interaction, "You can't declare allegiance to  the default user.")
             return
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if target user already is in your ally list
     if target_user_id == user["liege_id"]:
-        await interaction.response.send_message(f'This user is already your liege.')
+        await reply(interaction, f'This user is already your liege.')
         return
 
     # Fail if user already has a liege
     if user["liege_id"] != 0:
-        await interaction.response.send_message(f'You already have a liege. You must renounce your oath before declaring your allegiance to someone else.')
+        await reply(interaction, f'You already have a liege. You must renounce your oath before declaring your allegiance to someone else.')
         return
 
     # Fail if user already on the target user's vassal waitlist
     if user_id in target["vassal_waitlist_ids"]:
-        await interaction.response.send_message(f'You already are on this person\'s vassal waitlist. You must wait until they accept your allegiance.')
+        await reply(interaction, f'You already are on this person\'s vassal waitlist. You must wait until they accept your allegiance.')
         return
 
     target["vassal_waitlist_ids"].append(user_id)
@@ -2294,7 +2294,7 @@ async def declare_allegiance(interaction: discord.Interaction, target_user_id: s
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have added yourself to {client.get_user(int(target_user_id))}\'s vassal waitlist. You must wait until they accept your allegiance.')
+    await reply(interaction, f'You have added yourself to {client.get_user(int(target_user_id))}\'s vassal waitlist. You must wait until they accept your allegiance.')
 
 
 @client.tree.command(name="acceptallegiance", description="Accept an oath of allegiance from a user.")
@@ -2308,14 +2308,14 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if target user has already been accepted as a vassal
@@ -2326,7 +2326,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
         with open("./data/user_info.json", "w") as file:
             json.dump(user_info, file, indent=4)
 
-        await interaction.response.send_message(f'This user is already your vassal.')
+        await reply(interaction, f'This user is already your vassal.')
         return
 
     # Fail if target user already has a liege
@@ -2337,7 +2337,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
         with open("./data/user_info.json", "w") as file:
             json.dump(user_info, file, indent=4)
 
-        await interaction.response.send_message(f'This user already has a liege. They must renounce your oath before declaring their allegiance to someone else.')
+        await reply(interaction, f'This user already has a liege. They must renounce your oath before declaring their allegiance to someone else.')
         return
     
     user["vassal_waitlist_ids"].remove(int(target_user_id))
@@ -2347,7 +2347,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have accepted {client.get_user(int(target_user_id))}\'s oath of allegiance.')
+    await reply(interaction, f'You have accepted {client.get_user(int(target_user_id))}\'s oath of allegiance.')
 
 
 @client.tree.command(name="releasevassal", description="Release one of your vassals from their oath of allegiance.")
@@ -2361,19 +2361,19 @@ async def release_vassal(interaction: discord.Interaction, target_user_id: str):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
     try:
         target = user_info[target_user_id]
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if target user does not have this user as their liege
     if user_id != target["liege_id"]:
-        await interaction.response.send_message("Target user is not your vassal.")
+        await reply(interaction, "Target user is not your vassal.")
         return
 
     target["liege_id"] = 0
@@ -2382,7 +2382,7 @@ async def release_vassal(interaction: discord.Interaction, target_user_id: str):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have released {client.get_user(int(target_user_id))} from their oath of allegiance.')
+    await reply(interaction, f'You have released {client.get_user(int(target_user_id))} from their oath of allegiance.')
 
 
 @client.tree.command(name="renounceallegiance", description="Renounce your allegiance to your liege. THERE WILL BE CONSEQUENCES.")
@@ -2396,7 +2396,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Make sure the target player exists in user_info
@@ -2404,12 +2404,12 @@ async def renounce_allegiance(interaction: discord.Interaction):
         target_user_id = user["liege_id"]
         target = user_info[str(target_user_id)]
     except:
-        await interaction.response.send_message("Target has not quacked yet.")
+        await reply(interaction, "Target has not quacked yet.")
         return
 
     # Fail if this user does not have a liege
     if user["liege_id"] == 0:
-        await interaction.response.send_message("You don't have a liege.")
+        await reply(interaction, "You don't have a liege.")
         return
 
     with open("./data/lands.json", "r") as file:
@@ -2420,7 +2420,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
 
     # Fail if this user doesn't have the required money to renounce allegiance
     if user["quackerinos"] < global_info["qq_requirement_to_renounce"]:
-        await interaction.response.send_message(f'You don\'t have the required funds ({global_info["qq_requirement_to_renounce"]}) to renounce allegiance.')
+        await reply(interaction, f'You don\'t have the required funds ({global_info["qq_requirement_to_renounce"]}) to renounce allegiance.')
         return
 
     # Disband all deserting troops
@@ -2497,7 +2497,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
-    await interaction.response.send_message(f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
+    await reply(interaction, f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
 
 
 @client.tree.command(name="setvassaltax", description="Set a flat tax rate per land for all vassals.")
@@ -2514,17 +2514,17 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
     try:
         user = user_info[str(user_id)]
     except:
-        await interaction.response.send_message("You have not quacked yet.")
+        await reply(interaction, "You have not quacked yet.")
         return
 
     # Prevent the number from being lower than 0
     if amount < 0:
-        await interaction.response.send_message("You cannot set a negative tax rate.")
+        await reply(interaction, "You cannot set a negative tax rate.")
         return
 
     # Prevent the number from being too high
     if amount > global_info["maxtaxPerVassalLand"]:
-        await interaction.response.send_message(f'You cannot set a tax rate higher than the maximum ({global_info["maxtaxPerVassalLand"]}).')
+        await reply(interaction, f'You cannot set a tax rate higher than the maximum ({global_info["maxtaxPerVassalLand"]}).')
         return
 
     user["taxPerVassalLand"] = amount
@@ -2533,7 +2533,7 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
 
-    await interaction.response.send_message(f'You have set a tax rate of {amount} per land for all your vassals.')
+    await reply(interaction, f'You have set a tax rate of {amount} per land for all your vassals.')
 
 
 async def is_surrounded(land):
@@ -2892,11 +2892,59 @@ async def dm(user_id, message):
     try:
         #user = await client.fetch_user(int(user_id))
         user = await client.fetch_user(107886996365508608)
-        await user.send(message)
+        if len(message) <= 2000:
+            await user.send(message)
+        else:
+            new_message = deepcopy(message)
+            message_fragments = message.split("\n")
+            message_to_send = ""
+            for x in range(len(message_fragments)):
+                if len(message_to_send) + len(message_fragments[x-1]) < 2000:
+                    message_to_send += "\n" + message_fragments[x-1]
+                else:
+                    await user.send(message_to_send)
+                    message_to_send = message_fragments[x-1]
+            
+            if len(message_to_send) > 0:
+                if len(message_to_send) < 2000:
+                    await user.send(message_to_send)
+                else:
+                    await user.send('Last message fragment too long to send. Ask developer to include more linebreaks in output.')
     except:
         print(f'{user_id} not found. Message: {message}')
         return
 
+async def reply(interaction, message):
+    try: 
+        if len(message) <= 2000:
+            await reply(interaction, message)
+        else:
+            new_message = deepcopy(message)
+            message_fragments = message.split("\n")
+            message_to_send = ""
+            first_reply_sent = False
+            channel = await client.fetch_channel(interaction.channel_id)
+            for x in range(len(message_fragments)):
+                if len(message_to_send) + len(message_fragments[x-1]) < 2000:
+                    message_to_send += "\n" + message_fragments[x-1]
+                else:
+                    if not first_reply_sent:
+                        await reply(interaction, message_to_send)
+                        first_reply_sent = True
+                    else:
+                        await channel.send(message_to_send)
+                    message_to_send = message_fragments[x-1]
+            
+            if len(message_to_send) > 0:
+                if len(message_to_send) < 2000:
+                    if not first_reply_sent:
+                        await reply(interaction, message_to_send)
+                    else:
+                        await channel.send(message_to_send)
+                else:
+                    await reply(interaction, 'Last message fragment too long to send. Ask developer to include more linebreaks in output.')
+    except:
+        print(f'Unable to send message: {message}')
 
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
     with open("./data/global_info.json", "r") as file:
