@@ -2304,7 +2304,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
 
     # Fail if target user has already been accepted as a vassal
     if user_id == target["liege_id"]:
-        user["vassal_waitlist_ids"].remove(target_user_id)
+        user["vassal_waitlist_ids"].remove(int(target_user_id))
 
         # Save to database
         with open("./data/user_info.json", "w") as file:
@@ -2315,7 +2315,7 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
 
     # Fail if target user already has a liege
     if target["liege_id"] != 0:
-        user["vassal_waitlist_ids"].remove(target_user_id)
+        user["vassal_waitlist_ids"].remove(int(target_user_id))
 
         # Save to database
         with open("./data/user_info.json", "w") as file:
@@ -2323,8 +2323,8 @@ async def accept_allegiance(interaction: discord.Interaction, target_user_id: st
 
         await interaction.response.send_message(f'This user already has a liege. They must renounce your oath before declaring their allegiance to someone else.')
         return
-
-    user["vassal_waitlist_ids"].remove(target_user_id)
+    
+    user["vassal_waitlist_ids"].remove(int(target_user_id))
     target["liege_id"] = user_id
 
     # Save to database
