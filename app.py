@@ -383,10 +383,10 @@ async def dailyReset():
                 troops_by_user = {}
                 highest_user_id = 0
 
-                # Find the person with the most troops currently left in the siegecamp
-                for unit in land["siegeCamp"]:
-                    troops_by_user[unit["user_id"]] = troops_by_user.get(
-                        unit["user_id"], 0) + unit["amount"]
+                # Find the person with the most troops currently left in the attacking army
+                for unit in attacker_army:
+                    troops_by_user[unit["unit"]["user_id"]] = troops_by_user.get(
+                        unit["unit"]["user_id"], 0) + unit["unit"]["amount"]
 
                 for user_id, number in troops_by_user.items():
                     if troops_by_user.get(highest_user_id, 0) < number:
