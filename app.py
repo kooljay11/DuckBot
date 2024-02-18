@@ -1367,6 +1367,38 @@ async def list_troops(interaction: discord.Interaction, species_name: str):
     await reply(interaction, message)
 
 
+@client.tree.command(name="listlands", description="List all the lands currently in the game.")
+async def list_lands(interaction: discord.Interaction):
+    with open("./data/lands.json", "r") as file:
+        lands = json.load(file)
+
+    message = ""
+
+    for land_id, land in lands.items():
+        if land_id == "default":
+            continue
+
+        species = await get_species(land["species"])
+        species_emoji = species.get("emoji", land["species"])
+        total_defenders = 0
+        total_attackers = 0
+
+        for unit in land["garrison"]:
+            total_defenders += unit["amount"]
+
+        for unit in land["siegeCamp"]:
+            total_attackers += unit["amount"]
+
+        message += f'[ID: {land_id}] [{client.get_user(land["owner_id"])}] {land["name"]} - {species_emoji} | :coin: {land["quality"]}/{land["maxQuality"]} | :homes: {len(land["buildings"])} | :shield: {total_defenders} | :crossed_swords: {total_attackers}'
+
+        if await is_surrounded(land):
+            message += f' | :triangular_flag_on_post:'
+        
+        message += f'\n'
+
+    await reply(interaction, message)
+
+
 @client.tree.command(name="build", description="Build a new building in one of your lands (takes one month).")
 async def build(interaction: discord.Interaction, location_id: int, building_name: str):
     with open("./data/user_info.json", "r") as file:
@@ -2914,13 +2946,14 @@ async def dm(user_id, message):
         print(f'{user_id} not found. Message: {message}')
         return
 
+
 async def reply(interaction, message):
     try: 
         if len(message) <= 2000:
-            await reply(interaction, message)
+            await interaction.response.send_message(message)
         else:
             new_message = deepcopy(message)
-            message_fragments = message.split("\n")
+            message_fragments = new_message.split("\n")
             message_to_send = ""
             first_reply_sent = False
             channel = await client.fetch_channel(interaction.channel_id)
@@ -2929,7 +2962,7 @@ async def reply(interaction, message):
                     message_to_send += "\n" + message_fragments[x-1]
                 else:
                     if not first_reply_sent:
-                        await reply(interaction, message_to_send)
+                        await interaction.response.send_message(message_to_send)
                         first_reply_sent = True
                     else:
                         await channel.send(message_to_send)
@@ -2938,13 +2971,14 @@ async def reply(interaction, message):
             if len(message_to_send) > 0:
                 if len(message_to_send) < 2000:
                     if not first_reply_sent:
-                        await reply(interaction, message_to_send)
+                        await interaction.response.send_message(message_to_send)
                     else:
                         await channel.send(message_to_send)
                 else:
                     await reply(interaction, 'Last message fragment too long to send. Ask developer to include more linebreaks in output.')
     except:
         print(f'Unable to send message: {message}')
+
 
 async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, target_land=0):
     with open("./data/global_info.json", "r") as file:
