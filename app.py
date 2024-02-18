@@ -1389,7 +1389,16 @@ async def list_lands(interaction: discord.Interaction):
         for unit in land["siegeCamp"]:
             total_attackers += unit["amount"]
 
-        message += f'[ID: {land_id}] [{client.get_user(land["owner_id"])}] {land["name"]} - {species_emoji} | :coin: {land["quality"]}/{land["maxQuality"]} | :homes: {len(land["buildings"])} | :shield: {total_defenders} | :crossed_swords: {total_attackers}'
+        message += f'[ID: {land_id}] [{client.get_user(land["owner_id"])}] {land["name"]} - {species_emoji} | :coin: {land["quality"]}/{land["maxQuality"]}'
+
+        if len(land["buildings"]) > 0:
+            message += f' | :homes: {len(land["buildings"])}'
+
+        if total_defenders > 0:
+            message += f' | :shield: {total_defenders}'
+
+        if total_attackers > 0:
+            message += f' | :crossed_swords: {total_attackers}'
 
         if await is_surrounded(land):
             message += f' | :triangular_flag_on_post:'
