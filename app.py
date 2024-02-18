@@ -447,11 +447,12 @@ async def dailyReset():
             attacker_army = []
             defender_army = []
 
-            defend_index = 0
+            attack_index = 0
+            
             target_land = lands.get(str(task["target_land_id"]), "")
 
-            while defend_index < len(global_info["task_queue"]):
-                action = global_info["task_queue"][defend_index]
+            while attack_index < len(global_info["task_queue"]):
+                action = global_info["task_queue"][attack_index]
                 if action["target_land_id"] == task["target_land_id"] and action["task"] == "sallyout":
                     land = lands.get(str(action["location_id"]), "")
 
@@ -463,30 +464,30 @@ async def dailyReset():
                         if unit == "" or unit["amount"] < action["amount"]:
                             await dm(action["user_id"], f'You don\'t have enough {action["item"]} from {land["name"]} to send on an attack at {target_land["name"]}.')
                             global_info["task_queue"].pop(
-                                defend_index)  # Remove this task
+                                attack_index)  # Remove this task
                             continue
 
                     # Fail if the your land is already surrounded
                     if await is_surrounded(land) and action["location_id"] != action["target_land_id"]:
                         await dm(task["user_id"], f'You cannot move {action["item"]} out of {land["name"]} because it is fully surrounded.')
                         global_info["task_queue"].pop(
-                            defend_index)  # Remove this task
+                            attack_index)  # Remove this task
                         continue
 
                     # Add the troops to the defender army
-                    defender_army.append(
+                    attacker_army.append(
                         {"unit": unit, "amount": action["amount"]})
 
                     user_ids.append(action["user_id"])
 
                     global_info["task_queue"].pop(
-                        defend_index)  # Remove this task
+                        attack_index)  # Remove this task
                 else:
-                    defend_index += 1
+                    attack_index += 1
 
             # Add all siege camp to the attack army
             for unit in target_land["siegeCamp"]:
-                attacker_army.append(
+                defender_army.append(
                     {"unit": unit, "amount": unit["amount"]})
 
             total_defenders = await get_total_troops(defender_army)
