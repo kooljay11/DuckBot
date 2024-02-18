@@ -13,7 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+#@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -658,17 +659,21 @@ async def dailyReset():
                 continue
 
             # Get the amount that the land quality decreases by
-            # troop_counter = 0
-            # land_quality_penalty = 0
+            troop_counter = 0
+            land_quality_penalty = 0
 
-            # while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
-            #     if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
-            #         land_quality_penalty += 1
+            while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
+                if not bool(troop["requiresSpeciesMatch"]):
+                    break
 
-            #     if land_quality_penalty >= land["quality"]:
-            #         task["amount"] = troop_counter
-            #         break
-            #     troop_counter += 1
+                if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
+                    land_quality_penalty += 1
+
+
+                if land_quality_penalty >= land["quality"]:
+                    task["amount"] = troop_counter
+                    break
+                troop_counter += 1
 
             cost = troop["cost"] * task["amount"]
 
@@ -682,7 +687,7 @@ async def dailyReset():
             user["quackerinos"] -= cost
 
             # Remove the land quality
-            # land["quality"] -= land_quality_penalty
+            land["quality"] -= land_quality_penalty
 
             # Add the troops to the garrison
             new_unit = {"troop_name": task["item"], "amount": task["amount"], "user_id": task["user_id"]}
@@ -1080,7 +1085,7 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
         message = message.rstrip(",")
 
         if len(user["vassal_waitlist_ids"]) > 0:
-            message += f'\Vassal waitlist: '
+            message += f'\nVassal waitlist: '
             for target_id in user["vassal_waitlist_ids"]:
                 message += f'{client.get_user(int(target_id))}, '
         message = message.rstrip()
