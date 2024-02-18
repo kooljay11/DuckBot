@@ -70,11 +70,16 @@ async def dailyReset():
             # Add the income to the user
             user["quackerinos"] += income
 
-            # Roll for increase land quality if the user quacked
+            # Roll for increase land quality if the user quacked or if there is a bonus this season
             if bool(user["quackedToday"]):
                 if land["quality"] < land["maxQuality"]:
                     if random.random() < global_info["qualityImprovementProbability"]:
                         land["quality"] += 1
+                    
+                    land["quality"] += species[global_info["current_season"]].get("landQualityIncreasePerTurn", species["all-season"]["landQualityIncreasePerTurn"])
+                
+                land["quality"] = min(land["maxQuality"], land["quality"])
+
             else:
                 # Roll for decrease land quality of the user didn't quack
                 if land["quality"] > 0 and random.random() < global_info["qualityDecayProbability"]:
