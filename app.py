@@ -2722,6 +2722,8 @@ async def get_species(species_name):
     # Replace the attributes with the species specific overrides
     species["enabled"] = overrides.get("enabled", species["enabled"])
     species["mischief"] = overrides.get("mischief", species["mischief"])
+    species["description"] = overrides.get("description", species["mischief"])
+    species["emoji"] = overrides.get("emoji", species["mischief"])
 
     for attr, value in overrides["all-season"].items():
         species["all-season"][attr] = value
