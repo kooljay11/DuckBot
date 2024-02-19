@@ -42,9 +42,7 @@ async def dailyReset():
 
             species = await get_species(land["species"])
 
-            income = land["quality"] + \
-                int(species[global_info["current_season"]].get(
-                    "bonusIncomePerQuality", species["all-season"]["bonusIncomePerQuality"]) * land["quality"])
+            income = land["quality"] + int(species["bonusIncomePerQuality"] * land["quality"])
 
             # Give the user extra income according to the support they gave/lands this user has
             if user["support"] > 0:
@@ -63,8 +61,7 @@ async def dailyReset():
 
             # Adjust income if the land is being sieged by a superior foe
             if await is_surrounded(land):
-                income -= income * species[global_info["current_season"]].get(
-                    "incomePenaltyPercentInSiege", species["all-season"]["incomePenaltyPercentInSiege"])
+                income -= income * species["incomePenaltyPercentInSiege"]
                 income = max(0, int(income))
 
             # Add the income to the user
@@ -76,7 +73,7 @@ async def dailyReset():
                     if random.random() < global_info["qualityImprovementProbability"]:
                         land["quality"] += 1
                     
-                    land["quality"] += species[global_info["current_season"]].get("landQualityIncreasePerTurn", species["all-season"]["landQualityIncreasePerTurn"])
+                    land["quality"] += species["landQualityIncreasePerTurn"]
                 
                 land["quality"] = min(land["maxQuality"], land["quality"])
 
@@ -131,8 +128,7 @@ async def dailyReset():
             species = await get_species(troop["species"])
 
             cost = unit["amount"] * troop["upkeep"]
-            cost -= cost * species[global_info["current_season"]
-                                   ].get("upkeepDiscountPerTroop", species["all-season"]["upkeepDiscountPerTroop"])
+            cost -= cost * species["upkeepDiscountPerTroop"]
 
             # If the user doesn't have enough money left then disband all, otherwise reduce the user's qq balance
             if user["quackerinos"] < cost:
@@ -155,10 +151,8 @@ async def dailyReset():
             species = await get_species(troop["species"])
 
             cost = unit["amount"] * troop["upkeep"]
-            cost -= cost * species[global_info["current_season"]
-                                   ].get("upkeepDiscountPerTroop", species["all-season"]["upkeepDiscountPerTroop"])
-            cost += unit["amount"] * species[global_info["current_season"]
-                                             ].get("upkeepExtraPerTroopInOffensiveSiege", species["all-season"]["upkeepExtraPerTroopInOffensiveSiege"])
+            cost -= cost * species["upkeepDiscountPerTroop"]
+            cost += unit["amount"] * species["upkeepExtraPerTroopInOffensiveSiege"]
 
             # If the user doesn't have enough money left then disband all, otherwise reduce the user's qq balance
             if user["quackerinos"] < cost:
@@ -378,8 +372,9 @@ async def dailyReset():
 
             # If the defender army is empty then transfer the land to the attacking side (and add this to the message)
             total_defenders = await get_total_troops(defender_army)
+            total_attackers = await get_total_troops(attacker_army)
 
-            if total_defenders <= 0:
+            if total_defenders <= 0 and total_attackers > 0:
                 troops_by_user = {}
                 highest_user_id = 0
 
@@ -401,8 +396,7 @@ async def dailyReset():
                     troop = await get_troop(company["unit"]["troop_name"])
                     species = await get_species(troop["species"])
 
-                    total_destroy_percent += species[global_info["current_season"]].get(
-                        "percentBuildingsDestroyedOnConquest", species["all-season"]["percentBuildingsDestroyedOnConquest"]) * company["amount"]
+                    total_destroy_percent += species["percentBuildingsDestroyedOnConquest"] * company["amount"]
                     total_troops += company["amount"]
 
                 total_buildings_destroyed = int(
@@ -668,7 +662,7 @@ async def dailyReset():
             # Get the amount that the land quality decreases by
             troop_counter = 0
             land_quality_penalty = 0
-            quality_penalty_probability = species[global_info["current_season"]].get("qualityPenaltyProbabilityPerTroop", species["all-season"]["qualityPenaltyProbabilityPerTroop"])
+            quality_penalty_probability = species["qualityPenaltyProbabilityPerTroop"]
 
             while troop_counter < task["amount"] and quality_penalty_probability > 0:
                 if not bool(troop["requiresSpeciesMatch"]):
@@ -1675,7 +1669,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
 
-    quality_gain_probability = species[global_info["current_season"]].get("qualityReplenishProbabilityPerTroop", species["all-season"]["qualityReplenishProbabilityPerTroop"])
+    quality_gain_probability = species["qualityReplenishProbabilityPerTroop"]
     quality_gain = 0
 
     #If disbanding troops on one of your lands, with matching species, and if that species has qualityReplenishProbabilityPerTroop then replenish that land's quality
@@ -1791,7 +1785,7 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     species = await get_species(troop["species"])
 
     # Fail if the troop can't move during this season
-    if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
+    if not bool(species["canAttack"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
@@ -1862,7 +1856,7 @@ async def defend(interaction: discord.Interaction, location_id: int, troop_name:
     species = await get_species(troop["species"])
 
     # Fail if the troop can't move during this season
-    if not bool(species[global_info["current_season"]].get("canAttack", species["all-season"].get("canAttack"))):
+    if not bool(species["canAttack"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
@@ -1946,7 +1940,7 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
     species = await get_species(troop["species"])
 
     # Fail if the troop can't move during this season
-    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+    if not bool(species["canMove"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
@@ -2011,7 +2005,7 @@ async def sallyout(interaction: discord.Interaction, location_id: int, troop_nam
     species = await get_species(troop["species"])
 
     # Fail if the troop can't move during this season
-    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+    if not bool(species["canMove"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
@@ -2094,7 +2088,7 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
     species = await get_species(troop["species"])
 
     # Fail if the troop can't move during this season
-    if not bool(species[global_info["current_season"]].get("canMove", species["all-season"].get("canMove"))):
+    if not bool(species["canMove"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
 
@@ -2489,8 +2483,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
             troop = await get_troop(unit["troop_name"])
             species = await get_species(troop["species"])
 
-            percent_desert = species[global_info["current_season"]
-                                     ].get("percentDesertsOnOathbreaker", species["all-season"]["percentDesertsOnOathbreaker"])
+            percent_desert = species["percentDesertsOnOathbreaker"]
             total_amount = unit["amount"]
             num_desert = 0
             if percent_desert > 0:
@@ -2517,8 +2510,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
             troop = await get_troop(unit["troop_name"])
             species = await get_species(troop["species"])
 
-            percent_desert = species[global_info["current_season"]
-                                     ].get("percentDesertsOnOathbreaker", species["all-season"]["percentDesertsOnOathbreaker"])
+            percent_desert = species["percentDesertsOnOathbreaker"]
             total_amount = unit["amount"]
             num_desert = 0
             if percent_desert > 0:
@@ -2724,35 +2716,43 @@ async def get_land_id(query_land):
 async def get_species(species_name):
     with open("./data/species.json", "r") as file:
         species_list = json.load(file)
+    
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
 
     try:
         overrides = species_list[species_name]
     except:
         return ""
 
-    # species = species_list.get(species_name, "")
-    species = species_list.get("default", "")
+    default_species = species_list.get("default", "")
+    species = {}
+    
+    #Only add the non seasonal default attributes to the species
+    for attr, value in default_species.items():
+        if attr not in ["all-season", "spring", "summer", "fall", "winter"]:
+            species[attr] = value
+    
+    # Give the species all of the default all-season attributes
+    for attr, value in default_species["all-season"].items():
+        species[attr] = value
 
-    # Replace the attributes with the species specific overrides
-    species["enabled"] = overrides.get("enabled", species["enabled"])
-    species["mischief"] = overrides.get("mischief", species["mischief"])
-    species["description"] = overrides.get("description", species["mischief"])
-    species["emoji"] = overrides.get("emoji", species["mischief"])
+    # Override the all-season attributes with the proper season from the default species
+    for attr, value in default_species[global_info["current_season"]].items():
+        species[attr] = value
 
+    # Replace all non seasonal default attributes with species specific overrides
+    for attr, value in overrides.items():
+        if attr not in ["all-season", "spring", "summer", "fall", "winter"]:
+            species[attr] = value
+
+    # Give the species all of the all-season attributes
     for attr, value in overrides["all-season"].items():
-        species["all-season"][attr] = value
+        species[attr] = value
 
-    for attr, value in overrides["spring"].items():
-        species["spring"][attr] = value
-
-    for attr, value in overrides["summer"].items():
-        species["summer"][attr] = value
-
-    for attr, value in overrides["fall"].items():
-        species["fall"][attr] = value
-
-    for attr, value in overrides["winter"].items():
-        species["winter"][attr] = value
+    # Override the all-season attributes with the proper season
+    for attr, value in overrides[global_info["current_season"]].items():
+        species[attr] = value
 
     return species
 
@@ -2803,14 +2803,12 @@ async def resolve_battle(attack_army, defend_army, land=""):
     for unit in attack_army:
         troop = await get_troop(unit["unit"]["troop_name"])
         species = await get_species(troop["species"])
-        attacker_HP += (troop["HP"] + species[global_info["current_season"]].get(
-            "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+        attacker_HP += (troop["HP"] + species["bonusHPPerTroop"]) * unit["amount"]
 
     for unit in defend_army:
         troop = await get_troop(unit["unit"]["troop_name"])
         species = await get_species(troop["species"])
-        defender_HP += (troop["HP"] + species[global_info["current_season"]].get(
-            "bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+        defender_HP += (troop["HP"] + species["bonusHPPerTroop"]) * unit["amount"]
 
     if land != "":
         for building_name in land["buildings"]:
@@ -2831,20 +2829,14 @@ async def resolve_battle(attack_army, defend_army, land=""):
         for unit in attack_army:
             troop = await get_troop(unit["unit"]["troop_name"])
             species = await get_species(troop["species"])
-            attacker_ATK += int(troop["ATK"] + species[global_info["current_season"]].get(
-                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * unit["amount"]
-            attacker_DEF += (troop["AP"] + species[global_info["current_season"]].get(
-                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * unit["amount"]
-            # attacker_HP += (troop["HP"] + species[global_info["current_season"]].get("bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+            attacker_ATK += int(troop["ATK"] + species["bonusATKPerTroop"]) * unit["amount"]
+            attacker_DEF += (troop["AP"] + species["bonusDEFPerTroop"]) * unit["amount"]
 
         for unit in defend_army:
             troop = await get_troop(unit["unit"]["troop_name"])
             species = await get_species(troop["species"])
-            defender_ATK += (troop["ATK"] + species[global_info["current_season"]].get(
-                "bonusATKPerTroop", species["all-season"].get("bonusATKPerTroop", 0))) * unit["amount"]
-            defender_DEF += (troop["AP"] + species[global_info["current_season"]].get(
-                "bonusDEFPerTroop", species["all-season"].get("bonusDEFPerTroop", 0))) * unit["amount"]
-            # defender_HP += (troop["HP"] + species[global_info["current_season"]].get("bonusHPPerTroop", species["all-season"].get("bonusHPPerTroop", 0))) * unit["amount"]
+            defender_ATK += (troop["ATK"] + species["bonusATKPerTroop"]) * unit["amount"]
+            defender_DEF += (troop["AP"] + species["bonusDEFPerTroop"]) * unit["amount"]
 
         if land != "":
             for building_name in land["buildings"]:
@@ -2857,17 +2849,10 @@ async def resolve_battle(attack_army, defend_army, land=""):
                     building["APbonusPerTroop"] * updated_total_defenders
                 defbonus = min(defbonus, building["maxAPbonus"])
                 defender_DEF += defbonus
-                # hpbonus = building["HPbonus"] + building["HPbonusPerTroop"] * total_defenders
-                # hpbonus = min(hpbonus, building["maxHPbonus"])
-                # defender_HP += hpbonus
 
         attacker_score = await get_battle_score(attacker_ATK)
         defender_score = await get_battle_score(defender_ATK)
 
-        # attacker_score["score"] -= defender_DEF + defender_HP
-        # defender_score["score"] -= attacker_DEF + attacker_HP
-        # print(f'attacker_score["spite"]: {attacker_score["spite"]}')
-        # print(f'defender_score["spite"]: {defender_score["spite"]}')
         attack_spite = deepcopy(attacker_score["spite"])
         defend_spite = deepcopy(defender_score["spite"])
         attacker_score["spite"] -= defender_DEF + defender_HP
@@ -2876,19 +2861,11 @@ async def resolve_battle(attack_army, defend_army, land=""):
         defender_HP = max(0, defender_HP)
         attacker_HP -= defend_spite
         attacker_HP = max(0, attacker_HP)
-        # print(f'attacker_score["spite"]: {attacker_score["spite"]}')
-        # print(f'defender_score["spite"]: {defender_score["spite"]}')
-        # print(f'defender_HP: {defender_HP}')
-        # print(f'attacker_HP: {attacker_HP}')
 
         for x in range(attacker_score["spite"]):
             await remove_casualty(defend_army)
         for x in range(defender_score["spite"]):
             await remove_casualty(attack_army)
-        # for x in range(attacker_score["score"]):
-        #     await remove_casualty(defend_army)
-        # for x in range(defender_score["score"]):
-        #     await remove_casualty(attack_army)
 
         percent_casualties_attackers = 1 - await get_total_troops(attack_army) / total_attackers
         percent_casualties_defenders = 1 - await get_total_troops(defend_army) / total_defenders
