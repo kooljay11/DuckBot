@@ -657,6 +657,7 @@ async def dailyReset():
             user = user_info[str(task["user_id"])]
             troop = await get_troop(task["item"])
             land = lands.get(str(task["location_id"]), "")
+            species = await get_species(troop["species"])
 
             # Fail if the specified land doesn't belong to that player
             if task["location_id"] not in user["land_ids"]:
@@ -667,18 +668,19 @@ async def dailyReset():
             # Get the amount that the land quality decreases by
             troop_counter = 0
             land_quality_penalty = 0
+            quality_penalty_probability = species[global_info["current_season"]].get("qualityPenaltyProbabilityPerTroop", species["all-season"]["qualityPenaltyProbabilityPerTroop"])
 
-            while troop_counter < task["amount"] and global_info["qualityPenaltyProbabilityPerTroop"] > 0:
+            while troop_counter < task["amount"] and quality_penalty_probability > 0:
                 if not bool(troop["requiresSpeciesMatch"]):
                     break
 
-                if random.random() < global_info["qualityPenaltyProbabilityPerTroop"]:
+                if random.random() < quality_penalty_probability:
                     land_quality_penalty += 1
-
 
                 if land_quality_penalty >= land["quality"]:
                     task["amount"] = troop_counter
                     break
+
                 troop_counter += 1
 
             cost = troop["cost"] * task["amount"]
@@ -1651,6 +1653,7 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
 
     troop = await get_troop(troop_name)
     land = lands.get(str(location_id), "")
+    species = await get_species(troop["species"])
 
     # Fail if troop doesn't exist
     if troop == "":
@@ -1662,22 +1665,27 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
         await reply(interaction, 'Land not found.')
         return
 
-    # Fail if the specified land doesn't belong to that player
-    if location_id not in user["land_ids"]:
-        await reply(interaction, 'That land doesn\'t belong to you.')
-        return
-
-    # Fail if that troop doesn't match the species of the land
-    if bool(troop["requiresSpeciesMatch"]) and troop["species"] != land["species"]:
-        await reply(interaction, 'You can\'t hire that troop there.')
-        return
-
     unit = await get_unit(land["garrison"], troop_name, user_id)
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
         await reply(interaction, f'You don\'t have enough of that troop to disband {amount} of them.')
         return
+    
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    quality_gain_probability = species[global_info["current_season"]].get("qualityReplenishProbabilityPerTroop", species["all-season"]["qualityReplenishProbabilityPerTroop"])
+    quality_gain = 0
+
+    #If disbanding troops on one of your lands, with matching species, and if that species has qualityReplenishProbabilityPerTroop then replenish that land's quality
+    if location_id in user["land_ids"] and troop["species"] == land["species"] and quality_gain_probability > 0 and land["quality"] < land["maxQuality"]:
+        for x in range(amount):
+            if random.random() < quality_gain_probability:
+                quality_gain += 1
+        
+        land["quality"] += quality_gain
+        land["quality"] = min(land["maxQuality"], land["quality"])
 
     # Remove troops from that user's land
     unit["amount"] -= amount
@@ -1689,7 +1697,13 @@ async def disband(interaction: discord.Interaction, location_id: int, troop_name
     refund = troop["refundPercentOnDisband"] * troop["cost"] * amount
     user["quackerinos"] += refund
 
-    message = f'{amount} {troop_name}s were disbanded. {refund} qq were refunded to the user.'
+    message = f'{amount} {troop_name}s were disbanded. '
+
+    if refund > 0:
+        message += f'{refund} qq were refunded to the user. '
+
+    if quality_gain > 0:
+        message += f'{quality_gain} land quality was replenished at {land["name"]}. '
 
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
