@@ -13,8 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-#@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-@tasks.loop(hours=1)
+@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+#@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -3015,7 +3015,7 @@ async def main():
             raise ValueError(
                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
         await client.start(discord_token)
-        
+
 # async def main():
 #     async with client:
 #         with open("config.json", "r") as file:
