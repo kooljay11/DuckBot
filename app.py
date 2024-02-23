@@ -990,7 +990,7 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
-    top_list = "Top Quackers"
+    top_list = "__**Top Quackers (:ballot_box_with_check: = quacked today)**__"
 
     for x in range(number):
         user_id = await get_max_quacks(user_info)
@@ -999,6 +999,10 @@ async def quackery(interaction: discord.Interaction, number: int = 10):
             break
 
         top_list += f'\n{client.get_user(int(user_id))} ({user_id}) --- {user_info[str(user_id)]["quacks"]}'
+
+        if bool(user_info[str(user_id)]["quackedToday"]):
+            top_list += f' :ballot_box_with_check:'
+        
         user_info.pop(str(user_id))
 
     await reply(interaction, top_list)
