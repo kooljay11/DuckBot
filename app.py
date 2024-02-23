@@ -197,11 +197,11 @@ async def dailyReset():
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
-            ally_vassals = await get_allied_vassals(task["user_id"])
+            allies = await get_allies(task["user_id"])
 
             # Fail if the target is the liege or vassal of your liege or your vassal
-            if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == task["user_id"]):
-                await dm(task["user_id"], f'You can\'t siege {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+            if str(target_land["owner_id"]) in allies:
+                await dm(task["user_id"], f'You can\'t siege {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
                 global_info["task_queue"].pop(index)  # Remove this task
                 continue
 
@@ -327,11 +327,11 @@ async def dailyReset():
                             attack_index)  # Remove this task
                         continue
 
-                    ally_vassals = await get_allied_vassals(action["user_id"])
+                    allies = await get_allies(action["user_id"])
 
                     # Fail if the target is the liege or vassal of your liege or your vassal
-                    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == action["user_id"]):
-                        await dm(action["user_id"], f'You can\'t attack {client.get_user(int(target_land["owner_id"]))} for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+                    if str(target_land["owner_id"]) in allies:
+                        await dm(action["user_id"], f'You can\'t attack {client.get_user(int(target_land["owner_id"]))} for one of the following reasons: they are your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
                         global_info["task_queue"].pop(
                             attack_index)  # Remove this task
                         continue
@@ -532,14 +532,13 @@ async def dailyReset():
                     global_info["task_queue"].pop(index)  # Remove this task
                     continue
 
-            ally_vassals = await get_allied_vassals(task["user_id"])
+            allies = await get_allies(task["user_id"])
 
-            # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
-            if target_land["owner_id"] != task["user_id"]:
-                if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
-                    await dm(task["user_id"], f'You can\'t move {task["item"]} into {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are not your liege, fellow vassal, or your vassal.')
-                    global_info["task_queue"].pop(index)  # Remove this task
-                    continue
+            # Fail if the target land isn't yours or one of your allies
+            if target_land["owner_id"] != task["user_id"] and str(target_land["owner_id"]) not in allies:
+                await dm(task["user_id"], f'You can\'t move {task["item"]} into {client.get_user(int(target_land["owner_id"]))}\'s settlement {target_land["name"]} for one of the following reasons: they are not your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
+                global_info["task_queue"].pop(index)  # Remove this task
+                continue
 
             # Fail if the your land is already surrounded
             if await is_surrounded(land):
@@ -1058,12 +1057,6 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
         message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
 
         if user["homeland_id"] > 0:
-            # homeland = await get_land(user["homeland_id"])
-
-            # if homeland["owner_id"] == user_id:
-            #     message += f'This user is in control of their homeland.'
-            # else:
-            #     message += f'This user is not in control of their homeland.'
             if user["homeland_id"] in user["land_ids"]:
                 message += f'This user is in control of their homeland. '
             else:
@@ -1766,11 +1759,11 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         await reply(interaction, f'You can\'t attack yourself.')
         return
 
-    ally_vassals = await get_allied_vassals(user_id)
+    allies = await get_allies(user_id)
 
-    # Fail if the target is the liege or vassal of your liege or your vassal
-    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
-        await reply(interaction, f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+    # Fail if the target is one of your allies
+    if str(target_land["owner_id"]) in allies:
+        await reply(interaction, f'You can\'t attack this person for one of the following reasons: they are your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
         return
 
     # Fail if the your land is already surrounded
@@ -1921,11 +1914,11 @@ async def siege(interaction: discord.Interaction, location_id: int, troop_name: 
         await reply(interaction, f'You can\'t siege yourself.')
         return
 
-    ally_vassals = await get_allied_vassals(user_id)
+    allies = await get_allies(user_id)
 
-    # Fail if the target is the liege or vassal of your liege or your vassal
-    if user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id):
-        await reply(interaction, f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, or your vassal.')
+    # Fail if the target is one of your allies
+    if str(target_land["owner_id"]) in allies:
+        await reply(interaction, f'You can\'t siege this person for one of the following reasons: they are your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
         return
 
     # Fail if the your land is already surrounded
@@ -2063,13 +2056,12 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
         await reply(interaction, 'The developers stopped you from taking a useless action.')
         return
 
-    ally_vassals = await get_allied_vassals(user_id)
+    allies = await get_allies(user_id)
 
-    # Fail if the target land isn't yours, your liege's, vassal of your liege, or your vassal
-    if target_land["owner_id"] != user_id:
-        if not (user["liege_id"] != 0 and (target_land["owner_id"] == user["liege_id"] or str(target_land["owner_id"]) in ally_vassals or user_info[str(target_land["owner_id"])]["liege_id"] == user_id)):
-            await reply(interaction, f'You can only move troops to lands that belong to you, your liege, a vassal of your liege, or your vassal.')
-            return
+    # Fail if the target land isn't yours or an ally's
+    if target_land["owner_id"] != user_id and str(target_land["owner_id"]) not in allies:
+        await reply(interaction, f'You can only move troops to lands that belong to you, your liege, fellow vassal, your vassal, your ally, or a vassal of your ally.')
+        return
 
     # Fail if the your land is already surrounded
     if await is_surrounded(land):
@@ -2632,16 +2624,25 @@ async def add_unit(army, unit, amount=-1):
             target_unit["amount"] += amount
 
 
-async def get_allied_vassals(user_id):
+async def get_allies(user_id):
     with open("./data/user_info.json", "r") as file:
         user_info = json.load(file)
 
     user = user_info.get(str(user_id), "")
     allies = user["ally_ids"]
 
-    for ally_id, ally in user_info.items():
-        if user["liege_id"] == ally["liege_id"] or user["liege_id"] == ally_id or ally["liege_id"] == user_id:
-            allies.append(ally_id)
+    if user["liege_id"] != 0:
+        allies.append(user["liege_id"])
+    print(f'allies: {allies}')
+
+    # Check every person on the user list to see if:
+    # 1) They are the vassal of the user's liege (and the user has a liege)
+    # 2) They are the vassal of the user
+    # 3) They are the vassal of one of the user's allies
+    for target_id, target in user_info.items():
+        if (user["liege_id"] != 0 and user["liege_id"] == target["liege_id"]) or target["liege_id"] == user_id or target["liege_id"] in user["ally_ids"]:
+            allies.append(target_id)
+    print(f'allies: {allies}')
 
     return allies
 
