@@ -2929,13 +2929,13 @@ async def get_battle_score(num):
 
 async def dm(user_id, message):
     try:
-        #user = await client.fetch_user(int(user_id))
-        user = await client.fetch_user(107886996365508608)
+        user = await client.fetch_user(int(user_id))
+        #user = await client.fetch_user(107886996365508608)
         if len(message) <= 2000:
             await user.send(message)
         else:
             new_message = deepcopy(message)
-            message_fragments = message.split("\n")
+            message_fragments = new_message.split("\n")
             message_to_send = ""
             for x in range(len(message_fragments)):
                 if len(message_to_send) + len(message_fragments[x-1]) < 2000:
@@ -3007,19 +3007,19 @@ async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, tar
         json.dump(global_info, file, indent=4)
 
 
-# async def main():
-#     async with client:
-#         # Reading token from environment variable
-#         discord_token = os.getenv('DISCORD_BOT_TOKEN')
-#         if not discord_token:
-#             raise ValueError(
-#                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
-#         await client.start(discord_token)
 async def main():
     async with client:
-        with open("config.json", "r") as file:
-            config = json.load(file)
+        # Reading token from environment variable
+        discord_token = os.getenv('DISCORD_BOT_TOKEN')
+        if not discord_token:
+            raise ValueError(
+                "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+        await client.start(discord_token)
+# async def main():
+#     async with client:
+#         with open("config.json", "r") as file:
+#             config = json.load(file)
 
-        await client.start(config['token'])
+#         await client.start(config['token'])
 
 asyncio.run(main())
