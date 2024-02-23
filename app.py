@@ -3015,6 +3015,7 @@ async def main():
             raise ValueError(
                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
         await client.start(discord_token)
+        
 # async def main():
 #     async with client:
 #         with open("config.json", "r") as file:
