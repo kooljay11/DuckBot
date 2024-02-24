@@ -17,7 +17,7 @@ client = commands.Bot(command_prefix="/",
 @tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
-    with open("./bot_status.txt", "r") as file:
+    with open("./data/bot_status.txt", "r") as file:
         randomresponses = file.readlines()
         response = random.choice(randomresponses)
     await client.change_presence(activity=discord.CustomActivity(name=response, emoji='🦆'))
