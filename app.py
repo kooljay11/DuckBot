@@ -556,7 +556,7 @@ async def dailyReset():
             moved_unit = await remove_unit(army, unit, task["amount"])
 
             # Add them to the garrison on the target land
-            await add_unit(target_land["siegeCamp"], moved_unit)
+            await add_unit(target_land["garrison"], moved_unit)
 
             # DM the results to the player
             await dm(task["user_id"], f'{task["amount"]} {task["item"]}s were sent to {target_land["name"]}\'s garrison.')
