@@ -2050,15 +2050,16 @@ async def move(interaction: discord.Interaction, location_id: int, troop_name: s
 
     # Fail if that troop isn't in that land or if there aren't as many as specified
     if unit == "" or unit["amount"] < amount:
+        # Fail if they are both the same land
+        if location_id == target_land_id:
+            await reply(interaction, 'The developers stopped you from taking a useless action.')
+            return
+        
         unit = await get_unit(land["garrison"], troop_name, user_id)
         if unit == "" or unit["amount"] < amount:
             await reply(interaction, f'You don\'t have enough of that troop from that location to send to {target_land["name"]}.')
             return
 
-    # Fail if they are both the same land
-    if location_id == target_land_id:
-        await reply(interaction, 'The developers stopped you from taking a useless action.')
-        return
 
     allies = await get_allies(user_id)
 
