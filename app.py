@@ -1210,6 +1210,16 @@ async def view_task_queue(interaction: discord.Interaction):
     await reply(interaction, message)
 
 
+@client.tree.command(name="help", description="See the guide.")
+async def help(interaction: discord.Interaction):
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    message = global_info["help_message"]
+
+    await reply(interaction, message)
+
+
 async def get_quack_rank(quacks):
     with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
