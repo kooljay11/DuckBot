@@ -1,0 +1,128 @@
+{
+    "default": {
+        "enabled": false,
+        "ATKbonus": 0,
+        "HPbonus": 0,
+        "APbonus": 0,
+        "ATKbonusPerTroop": 0,
+        "HPbonusPerTroop": 0,
+        "APbonusPerTroop": 0,
+        "maxATKbonus": 9999,
+        "maxHPbonus": 9999,
+        "maxAPbonus": 9999,
+        "maxQualityBonus": 0,
+        "cost": 0,
+        "refundPercent": 0,
+        "upkeep": 0,
+        "fromUpgradeOnly": false,
+        "upgradesTo": "",
+        "demolishedTo": "",
+        "constructionTime": 1
+    },
+    "watchtower": {
+        "enabled": true,
+        "HPbonusPerTroop": 1,
+        "maxHPbonus": 30,
+        "ATKbonusPerTroop": 1,
+        "maxATKbonus": 30,
+        "cost": 730,
+        "upgradesTo": "keep",
+        "constructionTime": 6
+    },
+    "keep": {
+        "enabled": true,
+        "HPbonusPerTroop": 2,
+        "maxHPbonus": 100,
+        "ATKbonusPerTroop": 1,
+        "maxATKbonus": 100,
+        "cost": 1670,
+        "fromUpgradeOnly": true,
+        "upgradesTo": "castle",
+        "demolishedTo": "watchtower",
+        "constructionTime": 14
+    },
+    "castle": {
+        "enabled": true,
+        "HPbonusPerTroop": 3,
+        "maxHPbonus": 300,
+        "ATKbonusPerTroop": 1,
+        "maxATKbonus": 300,
+        "cost": 3150,
+        "fromUpgradeOnly": true,
+        "upgradesTo": "fortress",
+        "demolishedTo": "keep",
+        "constructionTime": 30
+    },
+    "fortress": {
+        "enabled": true,
+        "HPbonusPerTroop": 4,
+        "maxHPbonus": 1000,
+        "ATKbonusPerTroop": 1,
+        "maxATKbonus": 1000,
+        "cost": 5650,
+        "fromUpgradeOnly": true,
+        "demolishedTo": "castle",
+        "constructionTime": 60
+    },
+    "windmill": {
+        "enabled": true,
+        "maxQualityBonus": 30,
+        "cost": 3650,
+        "constructionTime": 15
+    },
+    "watermill": {
+        "enabled": true,
+        "maxQualityBonus": 18,
+        "cost": 2390,
+        "constructionTime": 9
+    },
+    "sawmill": {
+        "enabled": true,
+        "maxQualityBonus": 12,
+        "cost": 1670,
+        "constructionTime": 6
+    },
+    "bakery": {
+        "enabled": true,
+        "maxQualityBonus": 5,
+        "cost": 730,
+        "constructionTime": 3
+    },
+    "blacksmith": {
+        "enabled": true,
+        "maxQualityBonus": 5,
+        "cost": 730,
+        "constructionTime": 3
+    },
+    "stables": {
+        "enabled": true,
+        "maxQualityBonus": 2,
+        "cost": 300,
+        "constructionTime": 2
+    },
+    "tannery": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 150
+    },
+    "tavern": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 150
+    },
+    "market": {
+        "enabled": true,
+        "maxQualityBonus": 1,
+        "cost": 150
+    },
+    "sauna": {
+        "enabled": true,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
+    },
+    "brothel": {
+        "enabled": false,
+        "maxQualityBonus": 0,
+        "cost": 1000000000000
+    }
+}
