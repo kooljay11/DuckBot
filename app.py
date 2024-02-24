@@ -13,8 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-#@tasks.loop(hours=1)
+#@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
     with open("./bot_status.txt", "r") as file:
@@ -1159,7 +1159,6 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
     # Fail if land id is wrong/empty and land name is wrong/empty
     if land == "":
         land = await get_land_by_name(land_name)
-        print(f'land: {land}')
         if land == "":
             await reply(interaction, "Land not found.")
             return
@@ -2518,8 +2517,6 @@ async def renounce_allegiance(interaction: discord.Interaction):
                 unit["amount"] -= num_desert
 
                 # DM user that units have been disbanded
-                print(
-                    f'{num_desert}/{total_amount} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
                 await dm(unit["user_id"], f'{num_desert}/{unit["amount"]} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
 
         # Disband empty units from the siegeCamp
@@ -2638,7 +2635,6 @@ async def get_allies(user_id):
 
     if user["liege_id"] != 0:
         allies.append(user["liege_id"])
-    print(f'allies: {allies}')
 
     # Check every person on the user list to see if:
     # 1) They are the vassal of the user's liege (and the user has a liege)
@@ -2647,7 +2643,6 @@ async def get_allies(user_id):
     for target_id, target in user_info.items():
         if (user["liege_id"] != 0 and user["liege_id"] == target["liege_id"]) or target["liege_id"] == user_id or target["liege_id"] in user["ally_ids"]:
             allies.append(target_id)
-    print(f'allies: {allies}')
 
     return allies
 
@@ -2930,8 +2925,8 @@ async def get_battle_score(num):
 
 async def dm(user_id, message):
     try:
-        user = await client.fetch_user(int(user_id))
-        #user = await client.fetch_user(107886996365508608)
+        #user = await client.fetch_user(int(user_id))
+        user = await client.fetch_user(107886996365508608)
         if len(message) <= 2000:
             await user.send(message)
         else:
@@ -3008,20 +3003,20 @@ async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, tar
         json.dump(global_info, file, indent=4)
 
 
-async def main():
-    async with client:
-        # Reading token from environment variable
-        discord_token = os.getenv('DISCORD_BOT_TOKEN')
-        if not discord_token:
-            raise ValueError(
-                "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
-        await client.start(discord_token)
-
 # async def main():
 #     async with client:
-#         with open("config.json", "r") as file:
-#             config = json.load(file)
+#         # Reading token from environment variable
+#         discord_token = os.getenv('DISCORD_BOT_TOKEN')
+#         if not discord_token:
+#             raise ValueError(
+#                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+#         await client.start(discord_token)
 
-#         await client.start(config['token'])
+async def main():
+    async with client:
+        with open("config.json", "r") as file:
+            config = json.load(file)
+
+        await client.start(config['token'])
 
 asyncio.run(main())
