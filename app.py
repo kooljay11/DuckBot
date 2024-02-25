@@ -821,6 +821,8 @@ async def dailyReset():
     global_info["day_counter"] += 1
     global_info["current_season"] = await get_season(global_info["day_counter"])
 
+    global_info["first_attack"] = False
+
     # Save to database
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -848,8 +850,8 @@ async def dailyReset():
             try:
                 await client.get_channel(channel_id).send(newday_message)
             except:
-                print(f'Error trying to execute the new day to channel {channel_id}.')
-
+                #print(f'Error trying to execute the new day to channel {channel_id}.')
+                print()
 
 
 @client.event
@@ -1901,6 +1903,22 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     if not bool(species["canAttack"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
+    
+    current_time = datetime.datetime.now(tz=datetime.timezone.utc).time()
+    current_time = current_time.replace(hour=3,minute=0,second=0,microsecond=0)
+    daily_reset_time = current_time.replace(hour=12,minute=0,second=0,microsecond=0)
+    attack_cutoff_time = current_time.replace(hour=4,minute=0,second=0,microsecond=0)
+
+    # Fail if it is too late in the day for the first attack
+    if not bool(global_info["first_attack"]) and daily_reset_time > current_time > attack_cutoff_time:
+        await reply(interaction, f'You cannot attack someone 8 hours before the daily reset time.')
+        return
+    else:
+        if not bool(global_info["first_attack"]):
+            global_info["first_attack"] = True
+            
+        with open("./data/user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
 
     # Add the task to the queue and alert the defender
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
