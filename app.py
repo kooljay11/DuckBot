@@ -103,10 +103,11 @@ async def dailyReset():
         # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
             user["quackStreak"] = 0
+        else:
+            user["spins"] += 1
 
         user["quackedToday"] = False
         user["mischief"] = False
-        user["spins"] += 1
 
         target_rank = await get_quack_rank(user["quacks"])
 
