@@ -833,16 +833,23 @@ async def dailyReset():
 
     newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
     
+    # Tell all users with daily reminder on about the update
     for user_id, user in user_info.items():
         if bool(user["daily_reminder"]):
             await dm(user_id, newday_message)
+    
+    # Tell all specified channels about the update
+            
+    with open("./data/server_info.json", "r") as file:
+        server_info = json.load(file)
+    
+    for server_id, server in server_info.items():
+        for channel_id in server["daily_channels"]:
+            try:
+                await client.get_channel(channel_id).send(newday_message)
+            except:
+                print(f'Error trying to execute the new day to channel {channel_id}.')
 
-    # Tell the specified channel about the update
-    try:
-        destination_channel = int(global_info["new_day_channel_id"])
-        await client.get_channel(destination_channel).send(newday_message)
-    except:
-        print('Error trying to execute the new day.')
 
 
 @client.event
