@@ -70,7 +70,13 @@ async def dailyReset():
             # Roll for increase land quality if the user quacked or if there is a bonus this season
             if bool(user["quackedToday"]):
                 if land["quality"] < land["maxQuality"]:
-                    if random.random() < global_info["qualityImprovementProbability"]:
+                    qualityImprovementProbability = global_info["qualityImprovementProbability"]
+
+                    for building_id in land["buildings"]:
+                        building = await get_building(building_id)
+                        qualityImprovementProbability += building["qualityIncreaseChanceBonus"]
+
+                    if random.random() < qualityImprovementProbability:
                         land["quality"] += 1
                     
                     land["quality"] += species["landQualityIncreasePerTurn"]
@@ -2907,7 +2913,6 @@ async def buyspins(interaction: discord.Interaction, number: int):
         json.dump(user_info, file, indent=4)
 
     await reply(interaction, message)
-
 
 
 @client.tree.command(name="dailyreminder", description="Toggle your daily reminder (default: off).")
