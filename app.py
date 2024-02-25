@@ -2914,6 +2914,42 @@ async def dailyreminder(interaction: discord.Interaction):
     await reply(interaction, message)
 
 
+@client.tree.command(name="dailychannel", description="Manage where the daily message is sent in your server. Modes = view/set/remove")
+@commands.has_permissions(administrator=True)
+async def dailychannel(interaction: discord.Interaction, mode: str = "view", channel_id: str = None):
+    with open("./data/server_info.json", "r") as file:
+        server_info = json.load(file)
+
+    server_id = interaction.guild_id
+
+    # Make sure this server exists in user_info
+    server = server_info.get(str(server_id), None)
+
+    if server == None:
+        server = {
+            "daily_channels": []
+        }
+        server_info[server_id] = server
+    
+    if mode == "view":
+        print()
+    elif mode == "set":
+        server["daily_channels"].append(int(channel_id))
+    elif mode == "remove":
+        server["daily_channels"].remove(int(channel_id))
+    
+    message = f'__**{client.get_guild(server_id)} - Daily Channels**__'
+
+    #Give the name and id for each channel in this server
+    for channel_id in server["daily_channels"]:
+        message += f'\n{client.get_channel(channel_id)} (id:{channel_id})'
+
+    # Save to database
+    with open("./data/server_info.json", "w") as file:
+        json.dump(server_info, file, indent=4)
+
+    await reply(interaction, message)
+
 
 async def is_surrounded(land):
     defender_score = 0
