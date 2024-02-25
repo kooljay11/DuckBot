@@ -1692,6 +1692,24 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
         await reply(interaction, 'You cannot hire troops from a land that has zero quality.')
         return
 
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    current_time = datetime.datetime.now(tz=datetime.timezone.utc).time()
+    daily_reset_time = current_time.replace(hour=12,minute=0,second=0,microsecond=0)
+    attack_cutoff_time = current_time.replace(hour=4,minute=0,second=0,microsecond=0)
+
+    # Fail if it is too late in the day for the first attack
+    if not bool(global_info["first_attack"]) and daily_reset_time > current_time > attack_cutoff_time:
+        await reply(interaction, f'You cannot be the first to hire troops/attack someone 8 hours before the daily reset time.')
+        return
+    else:
+        if not bool(global_info["first_attack"]):
+            global_info["first_attack"] = True
+            
+            with open("./data/global_info.json", "w") as file:
+                json.dump(global_info, file, indent=4)
+
     # Add the task to the queue
     await add_to_queue(user_id, "hire", troop_name, location_id, amount)
 
@@ -1916,14 +1934,14 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
 
     # Fail if it is too late in the day for the first attack
     if not bool(global_info["first_attack"]) and daily_reset_time > current_time > attack_cutoff_time:
-        await reply(interaction, f'You cannot attack someone 8 hours before the daily reset time.')
+        await reply(interaction, f'You cannot be the first to hire troops/attack someone 8 hours before the daily reset time.')
         return
     else:
         if not bool(global_info["first_attack"]):
             global_info["first_attack"] = True
             
-        with open("./data/user_info.json", "w") as file:
-            json.dump(user_info, file, indent=4)
+            with open("./data/global_info.json", "w") as file:
+                json.dump(global_info, file, indent=4)
 
     # Add the task to the queue and alert the defender
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
