@@ -31,7 +31,7 @@ pipeline {
 
                     // Pass the Discord bot token as an environment variable to the Docker container
                     // Mount the volume to persist the user_info.json file
-                    dockerImage.run("-e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN} -v duck-bot-data:/app/data -d --name discord-bot-container")
+                    dockerImage.run("-e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN} -v duck-bot-data:/app/data -d --restart unless-stopped --name discord-bot-container")
                 }
             }
         }
