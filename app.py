@@ -1905,7 +1905,6 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
         return
     
     current_time = datetime.datetime.now(tz=datetime.timezone.utc).time()
-    current_time = current_time.replace(hour=3,minute=0,second=0,microsecond=0)
     daily_reset_time = current_time.replace(hour=12,minute=0,second=0,microsecond=0)
     attack_cutoff_time = current_time.replace(hour=4,minute=0,second=0,microsecond=0)
 
