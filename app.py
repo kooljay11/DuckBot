@@ -100,6 +100,7 @@ async def dailyReset():
 
         user["quackedToday"] = False
         user["mischief"] = False
+        user["spins"] += 1
 
         target_rank = await get_quack_rank(user["quacks"])
 
@@ -1100,6 +1101,9 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
                 message += f'{client.get_user(int(target_id))}, '
         message = message.rstrip()
         message = message.rstrip(",")
+        
+        if user["spins"] > 0:
+            message += f'\n\nSlot machine spins available: {user["spins"]}'
 
         for land_id in user["land_ids"]:
             land = await get_land(land_id)
@@ -2678,6 +2682,202 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
 
     await reply(interaction, f'You have set a tax rate of {amount} per land for all your vassals.')
 
+
+
+@client.tree.command(name="flip", description="Flip a coin to double your qq bet.")
+async def flip(interaction: discord.Interaction, number: int):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+
+    # Make sure the player can't bet negative quackerinos
+    if number < 1:
+        await reply(interaction, "Nice try.")
+        return
+
+    # Make sure the player can't bet more quackerinos than they have
+    try:
+        if int(user["quackerinos"]) < number:
+            await reply(interaction, "You don't have enough quackerinos for that.")
+            return
+    except:
+        await reply(interaction, "You don't have enough quackerinos for that.")
+        return
+
+    # Give the player quackerinos if they win the bet
+    if random.choice([True, False]):
+        user["quackerinos"] += number
+        message = f'You won {number} qq!'
+    else:
+        user["quackerinos"] -= number
+        message = f'You lost {number} qq...'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="slotmachine", description="Spin the slot machine for a chance to win the jackpot!")
+async def slotmachine(interaction: discord.Interaction):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./data/slots.json", "r") as file:
+        slots = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+
+    # Fail if the user has no spins left
+    if user["spins"] < 1:
+        await reply(interaction, "You have no spins left. Do /buyspins to pull the slot machine some more!")
+        return
+    
+    # Get the weights for each roller
+    total_weight = 0
+
+    all_position_ids = []
+
+    for position_id, position in slots["positions"].items():
+        total_weight += position["weight"]
+        all_position_ids.append(position_id)
+    
+    result_code = ""
+
+    # Spin the slot machine
+    for x in range(slots["num_positions"]):
+        result_number = random.randint(1, total_weight)
+
+        for position_id, position in slots["positions"].items():
+            if result_number <= position["weight"]:
+                result_code += position_id
+                break
+            else:
+                result_number -= position["weight"]
+    
+    player_reward = {}
+    
+    # Get the reward
+    for reward_id, reward in slots["rewards"].items():
+        # Shows which position correlates to which reward id
+        position_ids = {}
+
+        is_match = False
+
+        for x in range(len(reward_id)):
+            # Shows all the possible position_ids a reward id might be referring to
+            reward_position_ids = []
+
+            # Check if the reward id refers to a specific position id OR multiple position ids
+            if reward_id[x] not in all_position_ids:
+                reward_position_ids = slots["identifiers"][reward_id[x]]
+            else:
+                reward_position_ids = reward_id[x]
+
+            # Check if the current element in the result code is referred to by the reward_id
+            if result_code[x] in reward_position_ids:
+                position_id = position_ids.get(reward_id[x], None)
+
+                # If that reward_id has been used already, then make sure this current element matches it
+                if position_id is None:
+                    position_ids[reward_id[x]] = result_code[x]
+                elif result_code[x] != position_id:
+                    break
+
+                if x+1 == len(reward_id):
+                    is_match = True
+                    break
+            else:
+                break
+
+        if is_match:
+            player_reward = reward
+            break
+
+    # Get the result code as a list of emojis
+    formatted_result_code = ""
+
+    for position_id in result_code:
+        formatted_result_code += slots["positions"][position_id].get("emoji", position_id)
+
+    message = f'You got {formatted_result_code}. '
+
+    if player_reward.get("quackerinos", 0) > 0 and player_reward.get("spin", 0) > 0:
+        message += f'You received {player_reward["quackerinos"]} qq and {player_reward["spin"]} free spins as a reward!'
+    elif player_reward.get("quackerinos", 0) > 0:
+        message += f'You received {player_reward["quackerinos"]} qq as a reward!'
+    elif player_reward.get("spin", 0) > 0:
+        message += f'You received {player_reward["spin"]} free spins as a reward!'
+    else:
+        message += f'You didn\'t receive any reward.'
+
+    # Give rewards
+    user["spins"] -= 1
+    user["spins"] += player_reward.get("spin", 0)
+    user["quackerinos"] += player_reward.get("quackerinos", 0)
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="buyspins", description="Buy spins to use on the slot machine (5qq each).")
+async def buyspins(interaction: discord.Interaction, number: int):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./data/slots.json", "r") as file:
+        slots = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    cost = slots["spin_cost"] * number
+
+    # Make sure the player can't spend more quackerinos than they have
+    try:
+        if int(user["quackerinos"]) < cost:
+            await reply(interaction, "You don't have enough quackerinos for that.")
+            return
+    except:
+        await reply(interaction, "You don't have enough quackerinos for that.")
+        return
+    
+    #Add spins to the user
+    user["spins"] += number
+    user["quackerinos"] -= cost
+    
+    message = f'You bought {number} spins for a total of {cost} qq.'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
 
 async def is_surrounded(land):
     defender_score = 0
