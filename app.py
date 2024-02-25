@@ -99,6 +99,7 @@ async def dailyReset():
             user["quackStreak"] = 0
 
         user["quackedToday"] = False
+        user["mischief"] = False
 
         target_rank = await get_quack_rank(user["quacks"])
 
