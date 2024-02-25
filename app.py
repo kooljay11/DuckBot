@@ -2802,6 +2802,11 @@ async def slotmachine(interaction: discord.Interaction):
     if user["spins"] < 1:
         await reply(interaction, "You have no spins left. Do /buyspins to pull the slot machine some more!")
         return
+
+    total_reward = {
+            "spin": 0,
+            "quackerinos": 0
+        }
     
     # Get the weights for each roller
     total_weight = 0
@@ -2812,85 +2817,99 @@ async def slotmachine(interaction: discord.Interaction):
         total_weight += position["weight"]
         all_position_ids.append(position_id)
     
-    result_code = ""
+    total_spins = 10000
+    spin_count = 1
 
-    # Spin the slot machine
-    for x in range(slots["num_positions"]):
-        result_number = random.randint(1, total_weight)
+    while total_spins > 0:
+        result_code = ""
 
-        for position_id, position in slots["positions"].items():
-            if result_number <= position["weight"]:
-                result_code += position_id
-                break
-            else:
-                result_number -= position["weight"]
-    
-    player_reward = {}
-    
-    # Get the reward
-    for reward_id, reward in slots["rewards"].items():
-        # Shows which position correlates to which reward id
-        position_ids = {}
+        # Spin the slot machine
+        for x in range(slots["num_positions"]):
+            result_number = random.randint(1, total_weight)
 
-        is_match = False
+            for position_id, position in slots["positions"].items():
+                if result_number <= position["weight"]:
+                    result_code += position_id
+                    break
+                else:
+                    result_number -= position["weight"]
+        
+        player_reward = {}
+        
+        # Get the reward
+        for reward_id, reward in slots["rewards"].items():
+            # Shows which position correlates to which reward id
+            position_ids = {}
 
-        for x in range(len(reward_id)):
-            # Shows all the possible position_ids a reward id might be referring to
-            reward_position_ids = []
+            is_match = False
 
-            # Check if the reward id refers to a specific position id OR multiple position ids
-            if reward_id[x] not in all_position_ids:
-                reward_position_ids = slots["identifiers"][reward_id[x]]
-            else:
-                reward_position_ids = reward_id[x]
+            for x in range(len(reward_id)):
+                # Shows all the possible position_ids a reward id might be referring to
+                reward_position_ids = []
 
-            # Check if the current element in the result code is referred to by the reward_id
-            if result_code[x] in reward_position_ids:
-                position_id = position_ids.get(reward_id[x], None)
+                # Check if the reward id refers to a specific position id OR multiple position ids
+                if reward_id[x] not in all_position_ids:
+                    reward_position_ids = slots["identifiers"][reward_id[x]]
+                else:
+                    reward_position_ids = reward_id[x]
 
-                # If that reward_id has been used already, then make sure this current element matches it
-                if position_id is None:
-                    position_ids[reward_id[x]] = result_code[x]
-                elif result_code[x] != position_id:
+                # Check if the current element in the result code is referred to by the reward_id
+                if result_code[x] in reward_position_ids:
+                    position_id = position_ids.get(reward_id[x], None)
+
+                    # If that reward_id has been used already, then make sure this current element matches it
+                    if position_id is None:
+                        position_ids[reward_id[x]] = result_code[x]
+                    elif result_code[x] != position_id:
+                        break
+
+                    if x+1 == len(reward_id):
+                        is_match = True
+                        break
+                else:
                     break
 
-                if x+1 == len(reward_id):
-                    is_match = True
-                    break
-            else:
+            if is_match:
+                player_reward = reward
                 break
-
-        if is_match:
-            player_reward = reward
-            break
+        
+        if player_reward != {}:
+            print(f'[{spin_count}] player_reward: {player_reward}')
+        total_reward["quackerinos"] += player_reward.get("quackerinos", 0)
+        #total_reward["spin"] += player_reward.get("spin", 0)
+        total_spins += player_reward.get("spin", 0)
+        total_spins -= 1
+        spin_count += 1
 
     # Get the result code as a list of emojis
-    formatted_result_code = ""
+    # formatted_result_code = ""
 
-    for position_id in result_code:
-        formatted_result_code += slots["positions"][position_id].get("emoji", position_id)
+    # for position_id in result_code:
+    #     formatted_result_code += slots["positions"][position_id].get("emoji", position_id)
 
-    message = f'You got {formatted_result_code}. '
+    message = f'You received {total_reward["quackerinos"]} qq and {total_reward["spin"]} free spins as a reward!'
+    await reply(interaction, message)
+    # message = f'You got {formatted_result_code}. '
 
-    if player_reward.get("quackerinos", 0) > 0 and player_reward.get("spin", 0) > 0:
-        message += f'You received {player_reward["quackerinos"]} qq and {player_reward["spin"]} free spins as a reward!'
-    elif player_reward.get("quackerinos", 0) > 0:
-        message += f'You received {player_reward["quackerinos"]} qq as a reward!'
-    elif player_reward.get("spin", 0) > 0:
-        message += f'You received {player_reward["spin"]} free spins as a reward!'
-    else:
-        message += f'You didn\'t receive any reward.'
+    # if player_reward.get("quackerinos", 0) > 0 and player_reward.get("spin", 0) > 0:
+    #     message += f'You received {player_reward["quackerinos"]} qq and {player_reward["spin"]} free spins as a reward!'
+    # elif player_reward.get("quackerinos", 0) > 0:
+    #     message += f'You received {player_reward["quackerinos"]} qq as a reward!'
+    # elif player_reward.get("spin", 0) > 0:
+    #     message += f'You received {player_reward["spin"]} free spins as a reward!'
+    # else:
+    #     message += f'You didn\'t receive any reward.'
 
-    # Give rewards
-    user["spins"] -= 1
-    user["spins"] += player_reward.get("spin", 0)
-    user["quackerinos"] += player_reward.get("quackerinos", 0)
+    # # Give rewards
+    # user["spins"] -= 1
+    # user["spins"] += player_reward.get("spin", 0)
+    # user["quackerinos"] += player_reward.get("quackerinos", 0)
 
     # Save to database
-    with open("./data/user_info.json", "w") as file:
-        json.dump(user_info, file, indent=4)
+    # with open("./data/user_info.json", "w") as file:
+    #     json.dump(user_info, file, indent=4)
 
-    await reply(interaction, message)
+    #await reply(interaction, message)
 
 
 @client.tree.command(name="buyspins", description="Buy spins to use on the slot machine (5qq each).")
