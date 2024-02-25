@@ -831,11 +831,16 @@ async def dailyReset():
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
+    newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
+    
+    for user_id, user in user_info.items():
+        if bool(user["daily_reminder"]):
+            await dm(user_id, newday_message)
+
     # Tell the specified channel about the update
     try:
         destination_channel = int(global_info["new_day_channel_id"])
-        await client.get_channel(destination_channel).send(
-            f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}')
+        await client.get_channel(destination_channel).send(newday_message)
     except:
         print('Error trying to execute the new day.')
 
@@ -2878,6 +2883,37 @@ async def buyspins(interaction: discord.Interaction, number: int):
         json.dump(user_info, file, indent=4)
 
     await reply(interaction, message)
+
+
+
+@client.tree.command(name="dailyreminder", description="Toggle your daily reminder (default: off).")
+async def dailyreminder(interaction: discord.Interaction):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    if bool(user["daily_reminder"]):
+        user["daily_reminder"] = False
+        message = f'Daily reminders are now: off'
+    else:
+        user["daily_reminder"] = True
+        message = f'Daily reminders are now: on'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
 
 async def is_surrounded(land):
     defender_score = 0
