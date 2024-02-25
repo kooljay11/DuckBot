@@ -2640,6 +2640,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
         json.dump(lands, file, indent=4)
 
     await reply(interaction, f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
+    await dm(target_user_id, f'Your vassal {client.get_user(int(user_id))} has renounced their oath to you.')
 
 
 @client.tree.command(name="setvassaltax", description="Set a flat tax rate per land for all vassals.")
