@@ -1220,6 +1220,74 @@ async def help(interaction: discord.Interaction):
     await reply(interaction, message)
 
 
+@client.tree.command(name="mischief", description=">:)")
+async def mischief(interaction: discord.Interaction, target_user_id: str):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+    username = client.get_user(user_id)
+    
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    # Fail if the user's species isn't mischievous
+    species = await get_species(user["species"])
+
+    if not bool(species["mischief"]):
+        await reply(interaction, "I don't know what command you are referring to.")
+        return
+    
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        target_username = client.get_user(int(target_user_id))
+        if user == target:
+            await reply(interaction, "You can't do that to yourself.")
+            return
+        elif target_user_id == "default":
+            await reply(interaction, "You can't do that to the default user.")
+            return
+    except:
+        await reply(interaction, "Target has not quacked yet.")
+        return
+    
+    # Fail if the user has already done mischief today
+    if bool(user["mischief"]):
+        await reply(interaction, "Woah there. That's enough mischief for one day.")
+        return
+    
+    #Fail if the target has no qq left
+    if target["quackerinos"] <= 0:
+        await reply(interaction, f'You couldn\'t find any quackerinos on {target_username} so you beat them up instead.')
+        await dm(target_user_id, 'You got beaten up by the raccoon :/')
+        return
+    
+    #Steal 1qq from the target
+    target["quackerinos"] -= 1
+    user["quackerinos"] += 1
+    user["mischief"] = True
+
+    #Send a random message
+    with open("./data/mischief.txt", "r") as file:
+        randomresponses = file.readlines()
+        response = random.choice(randomresponses)
+    
+    await dm(target_user_id, response)
+    
+    message = f'You helped lighten {target_username}\'s purse by 1qq.'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
 async def get_quack_rank(quacks):
     with open("./data/global_info.json", "r") as file:
         global_info = json.load(file)
@@ -1272,7 +1340,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     # Make sure the species exists and is enabled
     species = await get_species(species_name)
     if species != "":
-        if not bool(species["enabled"]):
+        if not bool(species["enabled"]) and user_id != 693257736867020870:
             await reply(interaction, "This species is not enabled.")
             return
     else:
@@ -1282,6 +1350,27 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     # Make sure this player hasn't made a homeland already
     if user.get("homeland_id", -1) >= 0:
         await reply(interaction, "You already have a homeland.")
+        return
+    
+    #Make sure this player can't make a homeland if they have already chosen a species without a homeland
+    if user["species"] != "":
+        await reply(interaction, "You have already chosen a species without a homeland.")
+        return
+    
+    #If this player chooses a mischief species don't let them have a homeland
+    if bool(species["mischief"]):
+        #If not sprout then fail
+        if user_id != 693257736867020870:
+            await reply(interaction, "I don't know which species you are talking about.")
+            return
+
+        user["species"] = species_name
+        
+        # Save to database
+        with open("./data/user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
+
+        await reply(interaction, "You try to establish a homeland, but you realize that the joys in life come from mischievous adventures in others' homelands. You have chosen the path of the raccoon.")
         return
 
     with open("./data/lands.json", "r") as file:
@@ -1293,12 +1382,13 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         new_land["name"] = name
         new_land["owner_id"] = user_id
         new_land["species"] = species_name
+        new_land_id = global_info["landCounter"] + 1
 
-        lands[global_info["landCounter"]] = new_land
+        lands[new_land_id] = new_land
 
-        user["homeland_id"] = global_info["landCounter"]
+        user["homeland_id"] = new_land_id
         user["species"] = species_name
-        user["land_ids"] = [global_info["landCounter"]]
+        user["land_ids"] = [new_land_id]
 
         global_info["landCounter"] += 1
         message = 'New land created'
