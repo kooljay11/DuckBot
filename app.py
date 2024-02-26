@@ -13,8 +13,8 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-#@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
-@tasks.loop(hours=1)
+@tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
+#@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
     with open("./data/bot_status.txt", "r") as file:
@@ -3347,8 +3347,8 @@ async def get_battle_score(num):
 
 async def dm(user_id, message):
     try:
-        #user = await client.fetch_user(int(user_id))
-        user = await client.fetch_user(107886996365508608)
+        user = await client.fetch_user(int(user_id))
+        #user = await client.fetch_user(107886996365508608)
         if len(message) <= 2000:
             await user.send(message)
         else:
@@ -3425,20 +3425,20 @@ async def add_to_queue(user_id, action, item, location_id, amount=1, time=1, tar
         json.dump(global_info, file, indent=4)
 
 
-# async def main():
-#     async with client:
-#         # Reading token from environment variable
-#         discord_token = os.getenv('DISCORD_BOT_TOKEN')
-#         if not discord_token:
-#             raise ValueError(
-#                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
-#         await client.start(discord_token)
-
 async def main():
     async with client:
-        with open("config.json", "r") as file:
-            config = json.load(file)
+        # Reading token from environment variable
+        discord_token = os.getenv('DISCORD_BOT_TOKEN')
+        if not discord_token:
+            raise ValueError(
+                "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+        await client.start(discord_token)
 
-        await client.start(config['token'])
+# async def main():
+#     async with client:
+#         with open("config.json", "r") as file:
+#             config = json.load(file)
+
+#         await client.start(config['token'])
 
 asyncio.run(main())
