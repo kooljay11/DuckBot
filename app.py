@@ -17,7 +17,7 @@ client = commands.Bot(command_prefix="/",
 #@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
-    with open("./bot_status.txt", "r") as file:
+    with open("./data/bot_status.txt", "r") as file:
         randomresponses = file.readlines()
         response = random.choice(randomresponses)
     await client.change_presence(activity=discord.CustomActivity(name=response, emoji='🦆'))
@@ -70,7 +70,13 @@ async def dailyReset():
             # Roll for increase land quality if the user quacked or if there is a bonus this season
             if bool(user["quackedToday"]):
                 if land["quality"] < land["maxQuality"]:
-                    if random.random() < global_info["qualityImprovementProbability"]:
+                    qualityImprovementProbability = global_info["qualityImprovementProbability"]
+
+                    for building_id in land["buildings"]:
+                        building = await get_building(building_id)
+                        qualityImprovementProbability += building["qualityIncreaseChanceBonus"]
+
+                    if random.random() < qualityImprovementProbability:
                         land["quality"] += 1
                     
                     land["quality"] += species["landQualityIncreasePerTurn"]
@@ -97,8 +103,11 @@ async def dailyReset():
         # Reset streak counter if the streak is broken
         if not bool(user["quackedToday"]):
             user["quackStreak"] = 0
+        else:
+            user["spins"] += 1
 
         user["quackedToday"] = False
+        user["mischief"] = False
 
         target_rank = await get_quack_rank(user["quacks"])
 
@@ -819,6 +828,8 @@ async def dailyReset():
     global_info["day_counter"] += 1
     global_info["current_season"] = await get_season(global_info["day_counter"])
 
+    global_info["first_attack"] = False
+
     # Save to database
     with open("./data/user_info.json", "w") as file:
         json.dump(user_info, file, indent=4)
@@ -829,13 +840,25 @@ async def dailyReset():
     with open("./data/lands.json", "w") as file:
         json.dump(lands, file, indent=4)
 
-    # Tell the specified channel about the update
-    try:
-        destination_channel = int(global_info["new_day_channel_id"])
-        await client.get_channel(destination_channel).send(
-            f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}')
-    except:
-        print('Error trying to execute the new day.')
+    newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
+    
+    # Tell all users with daily reminder on about the update
+    for user_id, user in user_info.items():
+        if bool(user["daily_reminder"]):
+            await dm(user_id, newday_message)
+    
+    # Tell all specified channels about the update
+            
+    with open("./data/server_info.json", "r") as file:
+        server_info = json.load(file)
+    
+    for server_id, server in server_info.items():
+        for channel_id in server["daily_channels"]:
+            try:
+                await client.get_channel(channel_id).send(newday_message)
+            except:
+                #print(f'Error trying to execute the new day to channel {channel_id}.')
+                print()
 
 
 @client.event
@@ -1099,6 +1122,9 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
                 message += f'{client.get_user(int(target_id))}, '
         message = message.rstrip()
         message = message.rstrip(",")
+        
+        if user["spins"] > 0:
+            message += f'\n\nSlot machine spins available: {user["spins"]}'
 
         for land_id in user["land_ids"]:
             land = await get_land(land_id)
@@ -1159,7 +1185,6 @@ async def land_info(interaction: discord.Interaction, land_id: int = 0, land_nam
     # Fail if land id is wrong/empty and land name is wrong/empty
     if land == "":
         land = await get_land_by_name(land_name)
-        print(f'land: {land}')
         if land == "":
             await reply(interaction, "Land not found.")
             return
@@ -1207,6 +1232,84 @@ async def view_task_queue(interaction: discord.Interaction):
 
         if task["time"] > 1:
             message += f' (turns remaining: {task["time"]})'
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="help", description="See the guide.")
+async def help(interaction: discord.Interaction):
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    message = global_info["help_message"]
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="mischief", description=">:)")
+async def mischief(interaction: discord.Interaction, target_user_id: str):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+    username = client.get_user(user_id)
+    
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    # Fail if the user's species isn't mischievous
+    species = await get_species(user["species"])
+
+    if not bool(species["mischief"]):
+        await reply(interaction, "I don't know what command you are referring to.")
+        return
+    
+    # Make sure the target player exists in user_info
+    try:
+        target = user_info[target_user_id]
+        target_username = client.get_user(int(target_user_id))
+        if user == target:
+            await reply(interaction, "You can't do that to yourself.")
+            return
+        elif target_user_id == "default":
+            await reply(interaction, "You can't do that to the default user.")
+            return
+    except:
+        await reply(interaction, "Target has not quacked yet.")
+        return
+    
+    # Fail if the user has already done mischief today
+    if bool(user["mischief"]):
+        await reply(interaction, "Woah there. That's enough mischief for one day.")
+        return
+    
+    #Fail if the target has no qq left
+    if target["quackerinos"] <= 0:
+        await reply(interaction, f'You couldn\'t find any quackerinos on {target_username} so you beat them up instead.')
+        await dm(target_user_id, 'You got beaten up by the raccoon :/')
+        return
+    
+    #Steal 1qq from the target
+    target["quackerinos"] -= 1
+    user["quackerinos"] += 1
+    user["mischief"] = True
+
+    #Send a random message
+    with open("./data/mischief.txt", "r") as file:
+        randomresponses = file.readlines()
+        response = random.choice(randomresponses)
+    
+    await dm(target_user_id, response)
+    
+    message = f'You helped lighten {target_username}\'s purse by 1qq.'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
 
     await reply(interaction, message)
 
@@ -1263,7 +1366,7 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     # Make sure the species exists and is enabled
     species = await get_species(species_name)
     if species != "":
-        if not bool(species["enabled"]):
+        if not bool(species["enabled"]) and user_id != 693257736867020870:
             await reply(interaction, "This species is not enabled.")
             return
     else:
@@ -1273,6 +1376,27 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
     # Make sure this player hasn't made a homeland already
     if user.get("homeland_id", -1) >= 0:
         await reply(interaction, "You already have a homeland.")
+        return
+    
+    #Make sure this player can't make a homeland if they have already chosen a species without a homeland
+    if user["species"] != "":
+        await reply(interaction, "You have already chosen a species without a homeland.")
+        return
+    
+    #If this player chooses a mischief species don't let them have a homeland
+    if bool(species["mischief"]):
+        #If not sprout then fail
+        if user_id != 693257736867020870:
+            await reply(interaction, "I don't know which species you are talking about.")
+            return
+
+        user["species"] = species_name
+        
+        # Save to database
+        with open("./data/user_info.json", "w") as file:
+            json.dump(user_info, file, indent=4)
+
+        await reply(interaction, "You try to establish a homeland, but you realize that the joys in life come from mischievous adventures in others' homelands. You have chosen the path of the raccoon.")
         return
 
     with open("./data/lands.json", "r") as file:
@@ -1284,12 +1408,13 @@ async def establish_homeland(interaction: discord.Interaction, name: str, specie
         new_land["name"] = name
         new_land["owner_id"] = user_id
         new_land["species"] = species_name
+        new_land_id = global_info["landCounter"] + 1
 
-        lands[global_info["landCounter"]] = new_land
+        lands[new_land_id] = new_land
 
-        user["homeland_id"] = global_info["landCounter"]
+        user["homeland_id"] = new_land_id
         user["species"] = species_name
-        user["land_ids"] = [global_info["landCounter"]]
+        user["land_ids"] = [new_land_id]
 
         global_info["landCounter"] += 1
         message = 'New land created'
@@ -1568,6 +1693,24 @@ async def hire(interaction: discord.Interaction, location_id: int, troop_name: s
         await reply(interaction, 'You cannot hire troops from a land that has zero quality.')
         return
 
+    with open("./data/global_info.json", "r") as file:
+        global_info = json.load(file)
+
+    current_time = datetime.datetime.now(tz=datetime.timezone.utc).time()
+    daily_reset_time = current_time.replace(hour=12,minute=0,second=0,microsecond=0)
+    attack_cutoff_time = current_time.replace(hour=4,minute=0,second=0,microsecond=0)
+
+    # Fail if it is too late in the day for the first attack
+    if not bool(global_info["first_attack"]) and daily_reset_time > current_time > attack_cutoff_time:
+        await reply(interaction, f'You cannot be the first to hire troops/attack someone 8 hours before the daily reset time.')
+        return
+    else:
+        if not bool(global_info["first_attack"]):
+            global_info["first_attack"] = True
+            
+            with open("./data/global_info.json", "w") as file:
+                json.dump(global_info, file, indent=4)
+
     # Add the task to the queue
     await add_to_queue(user_id, "hire", troop_name, location_id, amount)
 
@@ -1785,6 +1928,21 @@ async def attack(interaction: discord.Interaction, location_id: int, troop_name:
     if not bool(species["canAttack"]):
         await reply(interaction, f'You cannot move {troop["species"]} troops out of {land["name"]} during the {global_info["current_season"]}.')
         return
+    
+    current_time = datetime.datetime.now(tz=datetime.timezone.utc).time()
+    daily_reset_time = current_time.replace(hour=12,minute=0,second=0,microsecond=0)
+    attack_cutoff_time = current_time.replace(hour=4,minute=0,second=0,microsecond=0)
+
+    # Fail if it is too late in the day for the first attack
+    if not bool(global_info["first_attack"]) and daily_reset_time > current_time > attack_cutoff_time:
+        await reply(interaction, f'You cannot be the first to hire troops/attack someone 8 hours before the daily reset time.')
+        return
+    else:
+        if not bool(global_info["first_attack"]):
+            global_info["first_attack"] = True
+            
+            with open("./data/global_info.json", "w") as file:
+                json.dump(global_info, file, indent=4)
 
     # Add the task to the queue and alert the defender
     await add_to_queue(user_id, "attack", troop_name, location_id, amount, target_land=target_land_id)
@@ -2518,8 +2676,6 @@ async def renounce_allegiance(interaction: discord.Interaction):
                 unit["amount"] -= num_desert
 
                 # DM user that units have been disbanded
-                print(
-                    f'{num_desert}/{total_amount} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
                 await dm(unit["user_id"], f'{num_desert}/{unit["amount"]} of {unit["troop_name"]} have been disbanded at {land["name"]} because of your oath breaking.')
 
         # Disband empty units from the siegeCamp
@@ -2542,6 +2698,7 @@ async def renounce_allegiance(interaction: discord.Interaction):
         json.dump(lands, file, indent=4)
 
     await reply(interaction, f'You have renounced your oath to {client.get_user(int(target_user_id))}. Half of all your troops have deserted and looted a quarter of your wealth.')
+    await dm(target_user_id, f'Your vassal {client.get_user(int(user_id))} has renounced their oath to you.')
 
 
 @client.tree.command(name="setvassaltax", description="Set a flat tax rate per land for all vassals.")
@@ -2578,6 +2735,268 @@ async def set_vassal_tax(interaction: discord.Interaction, amount: int):
         json.dump(user_info, file, indent=4)
 
     await reply(interaction, f'You have set a tax rate of {amount} per land for all your vassals.')
+
+
+
+@client.tree.command(name="flip", description="Flip a coin to double your qq bet.")
+async def flip(interaction: discord.Interaction, number: int):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+
+    # Make sure the player can't bet negative quackerinos
+    if number < 1:
+        await reply(interaction, "Nice try.")
+        return
+
+    # Make sure the player can't bet more quackerinos than they have
+    try:
+        if int(user["quackerinos"]) < number:
+            await reply(interaction, "You don't have enough quackerinos for that.")
+            return
+    except:
+        await reply(interaction, "You don't have enough quackerinos for that.")
+        return
+
+    # Give the player quackerinos if they win the bet
+    if random.choice([True, False]):
+        user["quackerinos"] += number
+        message = f'You won {number} qq!'
+    else:
+        user["quackerinos"] -= number
+        message = f'You lost {number} qq...'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="slotmachine", description="Spin the slot machine for a chance to win the jackpot!")
+async def slotmachine(interaction: discord.Interaction):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./data/slots.json", "r") as file:
+        slots = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+
+    # Fail if the user has no spins left
+    if user["spins"] < 1:
+        await reply(interaction, "You have no spins left. Do /buyspins to pull the slot machine some more!")
+        return
+    
+    # Get the weights for each roller
+    total_weight = 0
+
+    all_position_ids = []
+
+    for position_id, position in slots["positions"].items():
+        total_weight += position["weight"]
+        all_position_ids.append(position_id)
+    
+    result_code = ""
+
+    # Spin the slot machine
+    for x in range(slots["num_positions"]):
+        result_number = random.randint(1, total_weight)
+
+        for position_id, position in slots["positions"].items():
+            if result_number <= position["weight"]:
+                result_code += position_id
+                break
+            else:
+                result_number -= position["weight"]
+    
+    player_reward = {}
+    
+    # Get the reward
+    for reward_id, reward in slots["rewards"].items():
+        # Shows which position correlates to which reward id
+        position_ids = {}
+
+        is_match = False
+
+        for x in range(len(reward_id)):
+            # Shows all the possible position_ids a reward id might be referring to
+            reward_position_ids = []
+
+            # Check if the reward id refers to a specific position id OR multiple position ids
+            if reward_id[x] not in all_position_ids:
+                reward_position_ids = slots["identifiers"][reward_id[x]]
+            else:
+                reward_position_ids = reward_id[x]
+
+            # Check if the current element in the result code is referred to by the reward_id
+            if result_code[x] in reward_position_ids:
+                position_id = position_ids.get(reward_id[x], None)
+
+                # If that reward_id has been used already, then make sure this current element matches it
+                if position_id is None:
+                    position_ids[reward_id[x]] = result_code[x]
+                elif result_code[x] != position_id:
+                    break
+
+                if x+1 == len(reward_id):
+                    is_match = True
+                    break
+            else:
+                break
+
+        if is_match:
+            player_reward = reward
+            break
+
+    # Get the result code as a list of emojis
+    formatted_result_code = ""
+
+    for position_id in result_code:
+        formatted_result_code += slots["positions"][position_id].get("emoji", position_id)
+
+    message = f'You got {formatted_result_code}. '
+
+    if player_reward.get("quackerinos", 0) > 0 and player_reward.get("spin", 0) > 0:
+        message += f'You received {player_reward["quackerinos"]} qq and {player_reward["spin"]} free spins as a reward!'
+    elif player_reward.get("quackerinos", 0) > 0:
+        message += f'You received {player_reward["quackerinos"]} qq as a reward!'
+    elif player_reward.get("spin", 0) > 0:
+        message += f'You received {player_reward["spin"]} free spins as a reward!'
+    else:
+        message += f'You didn\'t receive any reward.'
+
+    # Give rewards
+    user["spins"] -= 1
+    user["spins"] += player_reward.get("spin", 0)
+    user["quackerinos"] += player_reward.get("quackerinos", 0)
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="buyspins", description="Buy spins to use on the slot machine (5qq each).")
+async def buyspins(interaction: discord.Interaction, number: int):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    with open("./data/slots.json", "r") as file:
+        slots = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    cost = slots["spin_cost"] * number
+
+    # Make sure the player can't spend more quackerinos than they have
+    try:
+        if int(user["quackerinos"]) < cost:
+            await reply(interaction, "You don't have enough quackerinos for that.")
+            return
+    except:
+        await reply(interaction, "You don't have enough quackerinos for that.")
+        return
+    
+    #Add spins to the user
+    user["spins"] += number
+    user["quackerinos"] -= cost
+    
+    message = f'You bought {number} spins for a total of {cost} qq.'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="dailyreminder", description="Toggle your daily reminder (default: off).")
+async def dailyreminder(interaction: discord.Interaction):
+    with open("./data/user_info.json", "r") as file:
+        user_info = json.load(file)
+
+    user_id = interaction.user.id
+
+    # Make sure this player exists in user_info
+    try:
+        user = user_info[str(user_id)]
+    except:
+        await reply(interaction, "You have not quacked yet.")
+        return
+    
+    if bool(user["daily_reminder"]):
+        user["daily_reminder"] = False
+        message = f'Daily reminders are now: off'
+    else:
+        user["daily_reminder"] = True
+        message = f'Daily reminders are now: on'
+
+    # Save to database
+    with open("./data/user_info.json", "w") as file:
+        json.dump(user_info, file, indent=4)
+
+    await reply(interaction, message)
+
+
+@client.tree.command(name="dailychannel", description="Manage where the daily message is sent in your server. Modes = view/set/remove")
+@commands.has_permissions(administrator=True)
+async def dailychannel(interaction: discord.Interaction, mode: str = "view", channel_id: str = None):
+    with open("./data/server_info.json", "r") as file:
+        server_info = json.load(file)
+
+    server_id = interaction.guild_id
+
+    # Make sure this server exists in user_info
+    server = server_info.get(str(server_id), None)
+
+    if server == None:
+        server = {
+            "daily_channels": []
+        }
+        server_info[server_id] = server
+    
+    if mode == "view":
+        print()
+    elif mode == "set":
+        server["daily_channels"].append(int(channel_id))
+    elif mode == "remove":
+        server["daily_channels"].remove(int(channel_id))
+    
+    message = f'__**{client.get_guild(server_id)} - Daily Channels**__'
+
+    #Give the name and id for each channel in this server
+    for channel_id in server["daily_channels"]:
+        message += f'\n{client.get_channel(channel_id)} (id:{channel_id})'
+
+    # Save to database
+    with open("./data/server_info.json", "w") as file:
+        json.dump(server_info, file, indent=4)
+
+    await reply(interaction, message)
 
 
 async def is_surrounded(land):
@@ -2638,7 +3057,6 @@ async def get_allies(user_id):
 
     if user["liege_id"] != 0:
         allies.append(user["liege_id"])
-    print(f'allies: {allies}')
 
     # Check every person on the user list to see if:
     # 1) They are the vassal of the user's liege (and the user has a liege)
@@ -2647,7 +3065,6 @@ async def get_allies(user_id):
     for target_id, target in user_info.items():
         if (user["liege_id"] != 0 and user["liege_id"] == target["liege_id"]) or target["liege_id"] == user_id or target["liege_id"] in user["ally_ids"]:
             allies.append(target_id)
-    print(f'allies: {allies}')
 
     return allies
 

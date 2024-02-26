@@ -1,8 +1,9 @@
 # Ignore all JSON files
-*.json
+#*.json
+config.json
 
 # Except for global_info.json
-!global_info.json
+#!global_info.json
 
 # venv files
 venv/*
