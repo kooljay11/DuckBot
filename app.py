@@ -13,7 +13,7 @@ client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
 
 
-@tasks.loop(time=[datetime.time(hour=22, minute=20, tzinfo=datetime.timezone.utc)])
+@tasks.loop(time=[datetime.time(hour=13, minute=38, tzinfo=datetime.timezone.utc)])
 #@tasks.loop(hours=1)
 async def dailyReset():
     print('Daily reset occurring')
