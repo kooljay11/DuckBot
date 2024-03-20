@@ -16,8 +16,8 @@
             "percentBuildingsDestroyedOnConquest": 0.5,
             "castleLvlsDestroyedOnConquest": 1,
             "landQualityIncreasePerTurn": 0,
-            "qualityPenaltyProbabilityPerTroop": 0.05,
-            "qualityReplenishProbabilityPerTroop": 0
+            "qualityPenaltyProbabilityPerTroop": 0.1,
+            "qualityReplenishProbabilityPerTroop": 0.05
         },
         "spring": {},
         "summer": {
