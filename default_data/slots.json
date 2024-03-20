@@ -1,0 +1,95 @@
+{
+    "spin_cost": 5,
+    "num_positions": 3,
+    "positions": {
+        "A": {
+            "emoji": ":duck:",
+            "weight": 1
+        },
+        "B": {
+            "emoji": ":goose:",
+            "weight": 1
+        },
+        "C": {
+            "emoji": ":dragon:",
+            "weight": 1
+        },
+        "D": {
+            "emoji": ":lady_beetle:",
+            "weight": 1
+        },
+        "E": {
+            "emoji": ":worm:",
+            "weight": 1
+        },
+        "F": {
+            "emoji": ":bug:",
+            "weight": 1
+        },
+        "0": {
+            "emoji": ":poop:",
+            "weight": 6
+        }
+    },
+    "identifiers": {
+        "N": ["A", "B", "C", "D", "E", "F"],
+        "M": ["A", "B", "C", "D", "E", "F"],
+        "Z": ["A", "B", "C", "D", "E", "F"],
+        "Y": ["D", "E", "F"],
+        "X": ["B", "C"]
+    },
+    "rewards": {
+        "AAA": {
+            "spin": 0,
+            "quackerinos": 500
+        },
+        "YYY": {
+            "spin": 0,
+            "quackerinos": 200
+        },
+        "XXX": {
+            "spin": 0,
+            "quackerinos": 75
+        },
+        "AAZ": {
+            "spin": 0,
+            "quackerinos": 50
+        },
+        "AZA": {
+            "spin": 0,
+            "quackerinos": 50
+        },
+        "ZAA": {
+            "spin": 0,
+            "quackerinos": 50
+        },
+        "YYZ": {
+            "spin": 5,
+            "quackerinos": 15
+        },
+        "YZY": {
+            "spin": 5,
+            "quackerinos": 15
+        },
+        "ZYY": {
+            "spin": 5,
+            "quackerinos": 15
+        },
+        "XXZ": {
+            "spin": 4,
+            "quackerinos": 5
+        },
+        "XZX": {
+            "spin": 4,
+            "quackerinos": 5
+        },
+        "ZXX": {
+            "spin": 4,
+            "quackerinos": 5
+        },
+        "ZNM": {
+            "spin": 3,
+            "quackerinos": 0
+        }
+    }
+}

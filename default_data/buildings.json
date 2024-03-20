@@ -17,7 +17,8 @@
         "fromUpgradeOnly": false,
         "upgradesTo": "",
         "demolishedTo": "",
-        "constructionTime": 1
+        "constructionTime": 1,
+		"qualityIncreaseChanceBonus": 0
     },
     "watchtower": {
         "enabled": true,
@@ -68,52 +69,61 @@
         "enabled": true,
         "maxQualityBonus": 30,
         "cost": 3650,
-        "constructionTime": 15
+        "constructionTime": 15,
+		"qualityIncreaseChanceBonus": 0.15
     },
     "watermill": {
         "enabled": true,
         "maxQualityBonus": 18,
         "cost": 2390,
-        "constructionTime": 9
+        "constructionTime": 9,
+		"qualityIncreaseChanceBonus": 0.09
     },
     "sawmill": {
         "enabled": true,
         "maxQualityBonus": 12,
         "cost": 1670,
-        "constructionTime": 6
+        "constructionTime": 6,
+		"qualityIncreaseChanceBonus": 0.06
     },
     "bakery": {
         "enabled": true,
         "maxQualityBonus": 5,
         "cost": 730,
-        "constructionTime": 3
+        "constructionTime": 3,
+		"qualityIncreaseChanceBonus": 0.03
     },
     "blacksmith": {
         "enabled": true,
         "maxQualityBonus": 5,
         "cost": 730,
-        "constructionTime": 3
+        "constructionTime": 3,
+		"qualityIncreaseChanceBonus": 0.03
     },
     "stables": {
         "enabled": true,
         "maxQualityBonus": 2,
         "cost": 300,
-        "constructionTime": 2
+        "constructionTime": 2,
+		"qualityIncreaseChanceBonus": 0.02
     },
     "tannery": {
         "enabled": true,
         "maxQualityBonus": 1,
-        "cost": 150
+        "cost": 150,
+		"qualityIncreaseChanceBonus": 0.01
     },
     "tavern": {
         "enabled": true,
         "maxQualityBonus": 1,
-        "cost": 150
+        "cost": 150,
+		"qualityIncreaseChanceBonus": 0.01
     },
     "market": {
         "enabled": true,
         "maxQualityBonus": 1,
-        "cost": 150
+        "cost": 150,
+		"qualityIncreaseChanceBonus": 0.01
     },
     "sauna": {
         "enabled": true,

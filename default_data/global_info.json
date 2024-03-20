@@ -1,6 +1,4 @@
 {
-    "new_day_channel_id": 1058195964491477062,
-    "usual_channel_id": 1071097907903742062,
     "maxQuackStreakLength": 7,
     "quackStreakReward": 1,
     "quackRank": {
@@ -17,12 +15,12 @@
         "Duck Diety": 1460,
         "Duck Singularity": 3650
     },
-    "qqExchangeRate": 17,
+    "qqExchangeRate": 15,
     "qqExchangeRateRange": [
         15,
         25
     ],
-    "landCounter": 4,
+    "landCounter": 0,
     "landLimit": 3,
     "maxtaxPerVassalLand": 10,
     "landIncomePenaltyPercentPerLand": 0.2,
@@ -31,8 +29,8 @@
     "supportIncomeBoostPercent": 0.1,
     "percentPlunderedOnOathbreaker": 0.25,
     "task_queue": [],
-    "day_counter": 202,
-    "current_season": "winter",
+    "day_counter": 1,
+    "current_season": "spring",
     "seasons": {
         "spring": 3,
         "summer": 3,

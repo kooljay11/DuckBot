@@ -14,10 +14,15 @@
             "incomePenaltyPercentInSiege": 1,
             "upkeepExtraPerTroopInOffensiveSiege": 1,
             "percentBuildingsDestroyedOnConquest": 0.5,
-            "castleLvlsDestroyedOnConquest": 1
+            "castleLvlsDestroyedOnConquest": 1,
+            "landQualityIncreasePerTurn": 0,
+            "qualityPenaltyProbabilityPerTroop": 0.05,
+            "qualityReplenishProbabilityPerTroop": 0
         },
         "spring": {},
-        "summer": {},
+        "summer": {
+            "landQualityIncreasePerTurn": 1
+        },
         "fall": {},
         "winter": {
             "canMove": false,
@@ -26,6 +31,7 @@
     },
     "duck": {
         "enabled": true,
+        "emoji": ":duck:",
         "description": "+1 income/3 land quality for all seasons.",
         "all-season": {
             "bonusIncomePerQuality": 0.33333334
@@ -37,6 +43,7 @@
     },
     "monkey": {
         "enabled": true,
+        "emoji": ":monkey:",
         "description": "+1 ATK/troop during the summer.",
         "all-season": {},
         "spring": {},
@@ -48,6 +55,7 @@
     },
     "penguin": {
         "enabled": true,
+        "emoji": ":penguin:",
         "description": "Able to launch attacks during the winter and +1 income/3 quality of land during the winter.",
         "all-season": {},
         "spring": {},
@@ -61,8 +69,11 @@
     },
     "rat": {
         "enabled": true,
+        "emoji": ":rat:",
         "description": "Reduced troop costs.",
-        "all-season": {},
+        "all-season": {
+            "qualityPenaltyProbabilityPerTroop": 0.025
+        },
         "spring": {},
         "summer": {},
         "fall": {},
@@ -70,6 +81,7 @@
     },
     "wildcat": {
         "enabled": true,
+        "emoji": ":cat:",
         "description": "Can hire tier 4 troops.",
         "all-season": {},
         "spring": {},
@@ -79,9 +91,10 @@
     },
     "wolf": {
         "enabled": true,
-        "description": "-25% upkeep for all troops.",
+        "emoji": ":wolf:",
+        "description": "-40% upkeep for all troops.",
         "all-season": {
-            "upkeepDiscountPerTroop": 0.25
+            "upkeepDiscountPerTroop": 0.4
         },
         "spring": {},
         "summer": {},
@@ -89,6 +102,7 @@
         "winter": {}
     },
     "fox": {
+        "emoji": ":fox:",
         "all-season": {
             "percentDesertsOnOathbreaker": 0,
             "percentBuildingsDestroyedOnConquest": 1
@@ -99,6 +113,7 @@
         "winter": {}
     },
     "raccoon": {
+        "emoji": ":raccoon:",
         "mischief": true,
         "all-season": {},
         "spring": {},
