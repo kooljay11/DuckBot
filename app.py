@@ -887,19 +887,21 @@ async def quack(interaction: discord.Interaction):
             user["quacks"] += 1
             user["quackStreak"] += 1
 
-            if user["species"] == "penguin":
-                message = f'{username}: noot noot!'
-            # elif user_id == 712336169270116403:
-            #     message = f'{username} did not deserve to quack today.'
-            else:
-                message = f'{username} quacked loudly.'
+            # if user["species"] == "penguin":
+            #     message = f'{username}: noot noot!'
+            # # elif user_id == 712336169270116403:
+            # #     message = f'{username} did not deserve to quack today.'
+            # else:
+            #     message = f'{username} quacked loudly.'
 
-            if user["quackStreak"] >= global_info["maxQuackStreakLength"]:
-                user["quackStreak"] -= global_info["maxQuackStreakLength"]
-                user["quacks"] += global_info["quackStreakReward"]
-                message += f'\n{username} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
+            # if user["quackStreak"] >= global_info["maxQuackStreakLength"]:
+            #     user["quackStreak"] -= global_info["maxQuackStreakLength"]
+            #     user["quacks"] += global_info["quackStreakReward"]
+            #     message += f'\n{username} finished a streak and got an extra {global_info["quackStreakReward"]} quacks.'
+            message = f'You gave all your quackerinos to the raccoon. You silly duck.'
         else:
-            message = f'{username} tried to quack but their throat is too sore today.'
+            #message = f'{username} tried to quack but their throat is too sore today.'
+            message = f'You tried to give all your quackerinos to the raccoon again, but when the raccoon saw your pockets were empty, they beat you up. You silly duck.'
     except:
         new_user = deepcopy(user_info["default"])
         user_info[user_id] = new_user
@@ -1081,7 +1083,8 @@ async def quack_info(interaction: discord.Interaction, user_id: str = ""):
 
             message += f'They are {next_quacks - quacks} quacks away from the next rank of {next_rank}. '
 
-        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
+        #message += f'They have spent {user.get("spentQuacks", 0)} quacks and have {user.get("quackerinos", 0)} quackerinos. '
+        message += f'They have spent {user.get("spentQuacks", 0)} quacks and have -6666666666666666666666666666666 quackerinos. '
 
         if user["homeland_id"] > 0:
             if user["homeland_id"] in user["land_ids"]:
@@ -1289,7 +1292,8 @@ async def mischief(interaction: discord.Interaction, target_user_id: str):
     
     #Fail if the target has no qq left
     if target["quackerinos"] <= 0:
-        await reply(interaction, f'You couldn\'t find any quackerinos on {target_username} so you beat them up instead.')
+        #await reply(interaction, f'You couldn\'t find any quackerinos on {target_username} so you beat them up instead.')
+        await reply(interaction, f'Haven\'t you done enough damage today??')
         await dm(target_user_id, 'You got beaten up by the raccoon :/')
         return
     
@@ -1305,7 +1309,8 @@ async def mischief(interaction: discord.Interaction, target_user_id: str):
     
     await dm(target_user_id, response)
     
-    message = f'You helped lighten {target_username}\'s purse by 1qq.'
+    #message = f'You helped lighten {target_username}\'s purse by 1qq.'
+    message = f'Haven\'t you done enough damage today??'
 
     # Save to database
     with open("./data/user_info.json", "w") as file:
