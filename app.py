@@ -6,8 +6,11 @@ import math
 import datetime
 from copy import deepcopy
 import json
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands, tasks
+
+load_dotenv()
 
 client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())

@@ -7,5 +7,6 @@ config.json
 
 # venv files
 venv/*
+.env
 
 data/
