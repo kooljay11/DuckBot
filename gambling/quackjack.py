@@ -17,8 +17,7 @@ from discord.utils import utcnow
 
 USER_INFO_PATH = pathlib.Path(__file__).absolute().parent.parent / "data" / "user_info.json"
 
-# T_RANKS = typing.Literal["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-T_RANKS = typing.Literal["A", "10"]
+T_RANKS = typing.Literal["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 T_SUITS = typing.Literal["♠️", "♦️", "♣️", "♥️"]
 _RANKS: typing.Final[tuple[T_RANKS, ...]] = typing.get_args(T_RANKS)
 _SUITS: typing.Final[tuple[_SUITS, ...]] = typing.get_args(T_SUITS)
@@ -1515,6 +1514,123 @@ class QuackjackGame:
         await self.end_round()
 
 
+class QuackjackTutorial(discord.ui.View):
+    """
+    A paginated tutorial for Quackjack.
+    """
+
+    def __init__(self):
+        """
+        Initiates the tutorial view.
+        """
+        super().__init__()
+        self.message: discord.Message | None = None
+
+    @staticmethod
+    def get_page(page: int) -> str:
+        """
+        Get a specific tutorial page.
+
+        :param page: The page number.
+        :return: The tutorial text of the page.
+        """
+        if page == 1:
+            return dedent(
+                """
+                # Beginner's Guide to Blackjack (Page 1 of 2)
+    
+                ## Objective
+                The objective of blackjack is to beat the dealer's hand without going over 21.
+    
+                ## Card Values
+                - Number cards (2-10) are worth their face value.
+                - Face cards (Jack, Queen, King) are worth 10.
+                - Aces can be worth 1 or 11, whichever is more advantageous you.
+    
+                ## Gameplay
+                1. **Initial Deal**: You place your bet, then the dealer deals two cards to you and themselves. One of the dealer's cards is face-up and the other one is face-down.
+    
+                2. **Your Turn**: You can decide whether to:
+                   - Hit: Take another card.
+                   - Stand: Keep the current hand.
+                   - Double Down: Double the bet and take one more card.
+                   - Split: If dealt a pair (same value cards), split them into two separate hands and double the bet.
+    
+                3. **Dealer's Turn**: After you finished your turn, the dealer reveals their face-down card.
+                   - If the dealer has 16 or less, they must hit.
+                   - If the dealer has 17 or more, they must stand.
+    
+                4. **Winning and Losing**: You win if your hand beats the dealer's without going over 21. If you bust (exceeds 21), you lose your bet. A tie results in a push (bet returned)."""
+            )
+
+        return dedent(
+            """
+            # Beginner's Guide to Blackjack (Page 2 of 2)
+            
+            ## Special Actions
+            
+            ### Split
+            - When dealt a pair, you can choose to split them into two separate hands.
+            - Each hand receives an additional card, and you play each hand separately.
+            - A bet equal to the original is placed on the second hand.
+            - When splitting Aces, you can only receive one additional card for each hands and then must stand.
+            
+            ### Doubling Down
+            - You can choose to double your original bet after receiving your first two cards or after a split (excepted when splitting Aces).
+            - You receive one additional card and then must stand.
+            
+            ### Insurance
+            - If the dealer's face-up card is an Ace, you can choose to make an insurance bet.
+            - The insurance bet is a separate side bet, up to half of the original bet, and pays 2:1 if the dealer has a natural blackjack.
+            - If the dealer does not have a natural blackjack, the insurance bet is lost.
+            
+            ### Surrender
+            - You are allowed to surrender your hand after the initial deal.
+            - Surrendering forfeits half of the original bet, and you exit the hand.
+            
+            ## Tips for Beginners
+            - Aim to get as close to 21 as possible without going over.
+            - Pay attention to the dealer's upcard to make strategic decisions.
+            - Practice basic strategy to optimize your chances of winning."""
+        )
+
+    def set_message(self, message: discord.Message) -> None:
+        """
+        Set the tutorial Discord message.
+
+        :param message: The message to display the tutorial on.
+        """
+        self.message = message
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.blurple, disabled=True)
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """
+        Get the previous page of the tutorial.
+
+        :param interaction: The discord.py interaction.
+        :param button: The button pressed.
+        """
+        self.next.disabled = False
+        self.back.disabled = True
+        # noinspection PyUnresolvedReferences
+        await interaction.response.defer()
+        await self.message.edit(content=self.get_page(1), view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """
+        Get the next page of the tutorial.
+
+        :param interaction: The discord.py interaction.
+        :param button: The button pressed.
+        """
+        self.next.disabled = True
+        self.back.disabled = False
+        # noinspection PyUnresolvedReferences
+        await interaction.response.defer()
+        await self.message.edit(content=self.get_page(2), view=self)
+
+
 class Quackjack(commands.Cog):
     """
     A full implementation of the game Blackjack ("Quackjack").
@@ -1593,6 +1709,17 @@ class Quackjack(commands.Cog):
             return
 
         await game.start_round(ctx, bet)
+
+    @quackjack.command()
+    async def tutorial(self, ctx: commands.Context) -> None:
+        """
+        View a tutorial guide on how to play Quackjack (it's actually just Blackjack)!
+
+        :param ctx: The interaction context.
+        """
+        view = QuackjackTutorial()
+        message = await ctx.reply(view.get_page(1), view=view, ephemeral=True)
+        view.set_message(message)
 
 
 async def setup(bot: commands.Bot) -> None:
