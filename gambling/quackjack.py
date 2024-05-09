@@ -18,7 +18,7 @@ from discord.utils import utcnow
 USER_INFO_PATH = pathlib.Path(__file__).absolute().parent.parent / "data" / "user_info.json"
 
 # T_RANKS = typing.Literal["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-T_RANKS = typing.Literal["2"]
+T_RANKS = typing.Literal["A", "10"]
 T_SUITS = typing.Literal["♠️", "♦️", "♣️", "♥️"]
 _RANKS: typing.Final[tuple[T_RANKS, ...]] = typing.get_args(T_RANKS)
 _SUITS: typing.Final[tuple[_SUITS, ...]] = typing.get_args(T_SUITS)
@@ -502,6 +502,7 @@ class QuackjackGame:
         self.main_message: discord.Message | None = None  # The main interaction message
         self.last_action_text: str | None = None  # The text of the last user-performed action
         self.is_first_action: bool = True  # If the user is still allowed to double down
+        self.insurance_bet: int = 0
         self.refresh_expiry()  # Sets the initial expiry time
 
     @classmethod
@@ -522,6 +523,15 @@ class QuackjackGame:
             # If the game has already expired, end the current game and start a new game.
             return QuackjackGame(user_id=user_id, guild_id=guild_id)
         return game
+
+    @property
+    def total_bet(self) -> int:
+        """
+        Get the total amount the player bet.
+
+        :return: The total bet.
+        """
+        return sum(hand.bet for hand in self.player_hands)
 
     def refresh_expiry(self) -> None:
         """
@@ -611,7 +621,8 @@ class QuackjackGame:
 
             player_cards_text = ", ".join(player_cards_texts)  # Join multiple hands with ","
 
-        total_bet = sum(hand.bet for hand in self.player_hands)
+        # Calculate the total bet, and format it.
+        total_bet = self.total_bet
         total_bet_calculation = (
             f" ({'+'.join(map(str, (hand.bet for hand in self.player_hands)))})" if len(self.player_hands) > 1 else ""
         )
@@ -622,22 +633,29 @@ class QuackjackGame:
                     Playing Quackjack with <@{self.user_id}> 
                     ```ansi
                     [1;2m[1;35mTotal Bet: {total_bet_text}[0m
-                    [1;2m[1;32mDealer's cards:[0m  {' ' * extra_dealer_padding}{dealer_cards_text}
+                    [1;2m[1;32mDealer's cards:[0m  {" " * extra_dealer_padding}{dealer_cards_text}
                     [1;2m[1;34m    Your cards:[0m  {player_cards_text}```
             """
             ).rstrip()
             + (f"\n{self.last_action_text}" if self.last_action_text is not None else "")
         )
 
-    def get_ending_message(self, amount_diff: int, msg: str) -> str:
+    def get_ending_message(self, amount_diff: int, msg: str, *, insurance_succeeded: bool = False) -> str:
         """
         Get the ending message of the game based on cards played.
 
         :param amount_diff: The earning / loss of the player.
         :param msg: The message to show in the ending.
+        :param insurance_succeeded: Whether the insurance was a success.
         :return: A string ending message.
         """
         # Add a random ending phrase depending on win/lose/tie.
+        if self.insurance_bet > 0:
+            if insurance_succeeded:
+                amount_diff += self.insurance_bet
+            else:
+                amount_diff -= self.insurance_bet
+
         if amount_diff > 0:
             random_ending_phrase = random.choice(self._winning_phrases)
         elif amount_diff < 0:
@@ -672,6 +690,7 @@ class QuackjackGame:
         self.main_message = None
         self.last_action_text = None
         self.is_first_action = True
+        self.insurance_bet = 0
 
         # First, take away the bet from the user's balance.
         self.modify_quackerinos(-initial_bet)
@@ -698,15 +717,185 @@ class QuackjackGame:
         else:
             self.main_message = await ctx.reply(game_board)
 
+        # You're only allowed to take insurance first thing in the game.
+        if self.dealer_hand[0].rank == "A":
+            await self.prompt_take_insurance()
+        else:
+            await self.start_round_continuation()
+
+    async def prompt_take_insurance(self) -> None:
+        """
+        Prompt the player to take insurance.
+        """
+        view = UserActionView(self)
+
+        async def take_insurance_callback(interaction: discord.Interaction) -> None:
+            """
+            Callback function for the discord.ui.Button view when the player choose to take an insurance.
+
+            :param interaction: The discord.py interaction.
+            """
+            self.last_action_text = "You choose to take insurance."
+            await self.main_message.edit(content=self.get_game_board(True), view=view)
+            await self.take_insurance(interaction, view)
+
+        # Add the take insurance button.
+        take_insurance_button = discord.ui.Button(label="Yes", style=discord.ButtonStyle.blurple)
+        take_insurance_button.callback = take_insurance_callback
+        view.add_item(take_insurance_button)
+
+        # noinspection PyUnusedLocal
+        async def dont_take_insurance_callback(interaction: discord.Interaction) -> None:
+            """
+            Callback function for the discord.ui.Button view when the player choose to not take an insurance.
+
+            :param interaction: The discord.py interaction.
+            """
+            await self.start_round_continuation()
+
+        # Add the take insurance button.
+        dont_take_insurance_button = discord.ui.Button(label="No", style=discord.ButtonStyle.blurple)
+        dont_take_insurance_button.callback = dont_take_insurance_callback
+        view.add_item(dont_take_insurance_button)
+
+        await self.main_message.edit(content=self.get_game_board(True) + "\nDo you wish to take insurance?", view=view)
+
+    async def take_insurance(self, interaction: discord.Interaction, view: discord.ui.View) -> None:
+        """
+        When the player choose to take insurance.
+
+        :param interaction: The discord.py interaction.
+        :param view: The view where the doubling down button got triggered.
+        """
+
+        class TakeInsuranceModal(discord.ui.Modal, title="Take Insurance"):
+            """
+            Modal to prompt the user to input an amount they want to take for insurance.
+            """
+
+            bet = discord.ui.TextInput(
+                label=f"Insurance Bet (Up to {self.player_hands[0].bet})",
+                placeholder="How much insurance do you want to take?",
+                min_length=len(str(MIN_BET)),
+                max_length=len(str(self.player_hands[0].bet)),
+                default=str(self.player_hands[0].bet),
+            )
+
+            # noinspection PyMethodParameters
+            def __init__(self_):
+                """
+                Create a take insurance modal with default timeout.
+                """
+                super().__init__(timeout=self.TIMEOUT_SECS)
+
+            # noinspection PyShadowingNames,PyMethodParameters
+            async def on_submit(self_, interaction: discord.Interaction) -> None:
+                """
+                Callback function for when the user submits the bet form.
+
+                :param interaction: THe current discord.py interaction.
+                """
+                view.stop()
+                for button in view.children:
+                    if isinstance(button, discord.ui.Button):
+                        button.disabled = True
+
+                await self.main_message.edit(view=view)
+
+                # If the bet is not a valid number.
+                if not self_.bet.value.isdigit():
+                    # noinspection PyUnresolvedReferences
+                    await interaction.response.send_message(
+                        "It doesn't look like that's a valid bet!",
+                        ephemeral=True,
+                        delete_after=5,
+                    )
+                    await self.prompt_take_insurance()
+                    return
+
+                bet = int(self_.bet.value)
+
+                # If the bet is out of bounds.
+                if bet > self.player_hands[0].bet or bet < MIN_BET:
+                    # noinspection PyUnresolvedReferences
+                    await interaction.response.send_message(
+                        f"Insurance bets must be between {MIN_BET} and {self.player_hands[0].bet}.",
+                        ephemeral=True,
+                        delete_after=5,
+                    )
+                    await self.prompt_take_insurance()
+                    return
+
+                user_balance = self.modify_quackerinos(0)  # Get the balance using 0 change
+
+                # Check if user can afford the bet.
+                if bet > user_balance:
+                    # noinspection PyUnresolvedReferences
+                    await interaction.response.send_message(
+                        f"You don't have enough quackerinos to take {bet} qq in insurance.",
+                        ephemeral=True,
+                        delete_after=5,
+                    )
+                    await self.prompt_take_insurance()
+                    return
+
+                # noinspection PyUnresolvedReferences
+                await interaction.response.defer()
+
+                # Update bets.
+                self.modify_quackerinos(-bet)
+                self.insurance_bet = bet
+
+                # Update the text for insurance
+                self.last_action_text = f"You took `{bet}` qq in insurance."
+
+                await self.start_round_continuation()
+
+            # noinspection PyShadowingNames,PyMethodParameters
+            async def on_error(self_, *args: typing.Any, **kwargs: typing.Any) -> None:
+                """
+                Callback for when there's an error.
+                """
+                view.stop()
+                await self.prompt_take_insurance()  # Disregard the error and re-ask for input
+                return
+
+            # noinspection PyMethodParameters
+            async def on_timeout(self_) -> None:
+                """
+                Callback for when the modal times out.
+                """
+                view.stop()
+                self.terminate()
+                return
+
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_modal(TakeInsuranceModal())
+
+    async def start_round_continuation(self) -> None:
+        """
+        Continue starting the round after taking insurance.
+        """
+        if self.expires_at < utcnow().timestamp():  # If the game already timed out
+            self.terminate()
+            return
+        self.refresh_expiry()
+
         player_value = self.player_hands[0].value
         dealer_value = self.dealer_hand.value
 
         if player_value == 21 and dealer_value == 21:  # Both got 21 (a draw)
             await asyncio.sleep(1)  # Wait 1 second to let the user process the message.
             self.active_player_hand_idx = 1  # Increment the active player hand since the game is over
-            self.modify_quackerinos(initial_bet)  # Add back the user's quackerinos
+
+            # Add back the user's quackerinos and the insurance winnings
+            self.modify_quackerinos(self.player_hands[0].bet + self.insurance_bet)
+
             final_message: str = "You and the dealer both got a Quackjack!"
-            ending_message: str = self.get_ending_message(0, final_message)
+            if self.insurance_bet > 0:
+                final_message += f" You received {self.insurance_bet} qq from insurance."
+
+            ending_message: str = self.get_ending_message(0, final_message, insurance_succeeded=True)
             await self.main_message.edit(content=ending_message)
             await self.end_round()
             return
@@ -714,10 +903,16 @@ class QuackjackGame:
         if player_value == 21:
             await asyncio.sleep(1)  # Wait 1 second to let the user process the message.
             self.active_player_hand_idx = 1  # Increment the active player hand since the game is over
-            earnings = int(initial_bet * 1.5)  # Natural 21 gets 2:1 winnings
-            self.modify_quackerinos(initial_bet + earnings)  # Add back the user's quackerinos and winnings
+            earnings = int(self.player_hands[0].bet * 1.5)  # Natural 21 gets 2:1 winnings
+            # Add back the user's quackerinos and winnings, deduct insurance
+            self.modify_quackerinos(self.player_hands[0].bet + earnings - self.insurance_bet)
             final_message = "You got a Quackjack!"
-            ending_message = self.get_ending_message(earnings, final_message)
+            if self.insurance_bet > 0:
+                final_message += (
+                    f" The dealer does not have a Quackjack. You lost {self.insurance_bet} qq to insurance."
+                )
+
+            ending_message = self.get_ending_message(earnings, final_message, insurance_succeeded=False)
             await self.main_message.edit(content=ending_message)
             await self.end_round()
             return
@@ -726,10 +921,19 @@ class QuackjackGame:
             await asyncio.sleep(1)  # Wait 1 second to let the user process the message.
             self.active_player_hand_idx = 1  # Increment the active player hand since the game is over
             final_message = "The dealer got a Quackjack!"
-            ending_message = self.get_ending_message(-initial_bet, final_message)
+            if self.insurance_bet > 0:
+                final_message += f" You received {self.insurance_bet} qq from insurance."
+                self.modify_quackerinos(self.insurance_bet)
+
+            ending_message = self.get_ending_message(-self.player_hands[0].bet, final_message, insurance_succeeded=True)
             await self.main_message.edit(content=ending_message)
             await self.end_round()
             return
+
+        if self.insurance_bet > 0:
+            self.last_action_text = (
+                f"The dealer does not have a Quackjack. You lost {self.insurance_bet} qq to insurance."
+            )
 
         await self.ask_for_user_action()  # Starts the main game
 
@@ -743,6 +947,7 @@ class QuackjackGame:
         self.main_message = None
         self.last_action_text = None
         self.is_first_action = True
+        self.insurance_bet = 0
         self.dealer_hand = None
         self.player_hands.clear()
         self.refresh_expiry()
@@ -863,7 +1068,6 @@ class QuackjackGame:
 
                 self.last_action_text = "You choose to double down."
                 await self.main_message.edit(content=self.get_game_board(True), view=view)
-                await asyncio.sleep(1)  # Add slight delay
                 await self.doubling_down(interaction, view)
 
             # Add the doubling down button.
@@ -872,7 +1076,6 @@ class QuackjackGame:
             view.add_item(doubling_down_button)
 
         if self.is_first_action:
-            # You're only allowed to double down or surrender at the start of the game.
 
             async def surrender_callback(interaction: discord.Interaction) -> None:
                 """
@@ -880,6 +1083,7 @@ class QuackjackGame:
 
                 :param interaction: The discord.py interaction.
                 """
+                view.stop()
                 for button in view.children:
                     if isinstance(button, discord.ui.Button):
                         button.disabled = True
@@ -994,7 +1198,7 @@ class QuackjackGame:
 
         # Splitting aces cannot draw anymore, they cannot be re-split either when paired with another ace
         if self.player_hands[self.active_player_hand_idx][0].rank == "A":
-            self.active_player_hand_idx += 1
+            self.active_player_hand_idx += 2
             # End of the game, process dealer's turn.
             await self.dealer_turn()
             return
@@ -1174,7 +1378,7 @@ class QuackjackGame:
             else:
                 ending_message = "All your hands busted."
 
-            final_message: str = self.get_ending_message(-sum(hand.bet for hand in self.player_hands), ending_message)
+            final_message: str = self.get_ending_message(-self.total_bet, ending_message)
             await self.main_message.edit(content=final_message)
             await self.end_round()
             return
@@ -1192,8 +1396,9 @@ class QuackjackGame:
 
         if self.dealer_hand.is_busted:  # Dealer busted
             if len(self.player_hands) == 1:  # Player has only one hand, and it's not busted, they win
-                earnings = self.player_hands[0].bet  # Winning to dealer busted earns 1:1
-                self.modify_quackerinos(self.player_hands[0].bet + earnings)
+                quackerinos_return = self.player_hands[0].bet
+                earnings = quackerinos_return  # Winning to dealer busted earns 1:1
+                self.modify_quackerinos(quackerinos_return + earnings)
                 ending_message = f"The dealer busted with {self.dealer_hand.value}."
 
             else:  # Some player hands are busted, but some are winning
@@ -1222,7 +1427,7 @@ class QuackjackGame:
                         f"{self._format_hand_indexes(losing_hand_indexes)} busted."
                     )
 
-            final_message = self.get_ending_message(earnings, ending_message)
+            final_message = self.get_ending_message(quackerinos_return + earnings - self.total_bet, ending_message)
             await self.main_message.edit(content=final_message)
             await self.end_round()
             return
@@ -1232,7 +1437,7 @@ class QuackjackGame:
 
         # First case, if player wins with all hands.
         if all(hand.value > self.dealer_hand.value for hand in self.player_hands):
-            earnings = sum(hand.bet for hand in self.player_hands)
+            earnings = self.total_bet
             quackerinos_return = earnings  # Winning payout is 1:1
             self.modify_quackerinos(quackerinos_return + earnings)
             if len(self.player_hands) == 1:
@@ -1255,7 +1460,7 @@ class QuackjackGame:
             else:
                 ending_message = f"All your hands loses to the dealer's {self.dealer_hand.value}."
 
-            final_message = self.get_ending_message(-sum(hand.bet for hand in self.player_hands), ending_message)
+            final_message = self.get_ending_message(-self.total_bet, ending_message)
             await self.main_message.edit(content=final_message)
             await self.end_round()
             return
@@ -1305,8 +1510,7 @@ class QuackjackGame:
                 f"You tied with {self._format_plural('hand', tie_hand_indexes)} "
                 f"{self._format_hand_indexes(tie_hand_indexes)}."
             )
-        total_bet = sum(hand.bet for hand in self.player_hands)
-        final_message = self.get_ending_message((quackerinos_return + earnings) - total_bet, ending_message)
+        final_message = self.get_ending_message((quackerinos_return + earnings) - self.total_bet, ending_message)
         await self.main_message.edit(content=final_message)
         await self.end_round()
 
