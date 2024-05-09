@@ -11,6 +11,7 @@ import discord
 from discord.ext import commands, tasks
 
 load_dotenv()
+discord.utils.setup_logging()
 
 client = commands.Bot(command_prefix="/",
                       intents=discord.Intents.all())
@@ -3435,6 +3436,7 @@ async def main():
         if not discord_token:
             raise ValueError(
                 "No token provided. Set the DISCORD_BOT_TOKEN environment variable.")
+        await client.load_extension("gambling.quackjack")
         await client.start(discord_token)
 
 # async def main():
