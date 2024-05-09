@@ -17,7 +17,8 @@ from discord.utils import utcnow
 
 USER_INFO_PATH = pathlib.Path(__file__).absolute().parent.parent / "data" / "user_info.json"
 
-T_RANKS = typing.Literal["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+# T_RANKS = typing.Literal["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+T_RANKS = typing.Literal["2"]
 T_SUITS = typing.Literal["♠️", "♦️", "♣️", "♥️"]
 _RANKS: typing.Final[tuple[T_RANKS, ...]] = typing.get_args(T_RANKS)
 _SUITS: typing.Final[tuple[_SUITS, ...]] = typing.get_args(T_SUITS)
@@ -500,7 +501,7 @@ class QuackjackGame:
         self.active_player_hand_idx: int = 0  # The current playing hand of the player
         self.main_message: discord.Message | None = None  # The main interaction message
         self.last_action_text: str | None = None  # The text of the last user-performed action
-        self.can_double_down: bool = True  # If the user is still allowed to double down
+        self.is_first_action: bool = True  # If the user is still allowed to double down
         self.refresh_expiry()  # Sets the initial expiry time
 
     @classmethod
@@ -602,7 +603,7 @@ class QuackjackGame:
                 if hand_idx < self.active_player_hand_idx:  # Already actioned on
                     extra_info = get_extra_info(player_hand)
                 elif hand_idx == self.active_player_hand_idx:
-                    extra_info = f" [2;30m(Current)[0m"
+                    extra_info = f" [2;36m(Current)[0m"
                 else:
                     extra_info = ""
                 extra_dealer_padding = len(f"[Hand #{hand_idx + 1}] ")
@@ -611,12 +612,16 @@ class QuackjackGame:
             player_cards_text = ", ".join(player_cards_texts)  # Join multiple hands with ","
 
         total_bet = sum(hand.bet for hand in self.player_hands)
+        total_bet_calculation = (
+            f" ({'+'.join(map(str, (hand.bet for hand in self.player_hands)))})" if len(self.player_hands) > 1 else ""
+        )
+        total_bet_text = f"{total_bet} {self._format_plural('quackerino', total_bet)}{total_bet_calculation}"
         return (
             dedent(
                 f"""
                     Playing Quackjack with <@{self.user_id}> 
                     ```ansi
-                    [1;2m[1;35mTotal Bet: {total_bet} {self._format_plural("quackerino", total_bet)}[0m
+                    [1;2m[1;35mTotal Bet: {total_bet_text}[0m
                     [1;2m[1;32mDealer's cards:[0m  {' ' * extra_dealer_padding}{dealer_cards_text}
                     [1;2m[1;34m    Your cards:[0m  {player_cards_text}```
             """
@@ -666,7 +671,7 @@ class QuackjackGame:
         self.active_player_hand_idx = 0
         self.main_message = None
         self.last_action_text = None
-        self.can_double_down = True
+        self.is_first_action = True
 
         # First, take away the bet from the user's balance.
         self.modify_quackerinos(-initial_bet)
@@ -737,7 +742,7 @@ class QuackjackGame:
         self.active_player_hand_idx = 0
         self.main_message = None
         self.last_action_text = None
-        self.can_double_down = True
+        self.is_first_action = True
         self.dealer_hand = None
         self.player_hands.clear()
         self.refresh_expiry()
@@ -749,6 +754,11 @@ class QuackjackGame:
 
         if self.expires_at < utcnow().timestamp():  # If the game already timed out
             self.terminate()
+            return
+
+        if self.active_player_hand_idx >= len(self.player_hands):
+            # End of the game, process dealer's turn.
+            await self.dealer_turn()
             return
 
         self.refresh_expiry()
@@ -804,35 +814,12 @@ class QuackjackGame:
         stay_button.callback = stay_callback
         view.add_item(stay_button)
 
-        if self.can_double_down:
-            # You're only allowed to double down at the start of the game.
-
-            async def doubling_down_callback(interaction: discord.Interaction) -> None:
-                """
-                Callback function for the discord.ui.Button view when the player choose to double down.
-
-                :param interaction: The discord.py interaction.
-                """
-                for button in view.children:
-                    # Don't disable Double Down button in case user pressed "cancel".
-                    if isinstance(button, discord.ui.Button) and button.label != "Double Down":
-                        button.disabled = True
-
-                self.last_action_text = "You choose to double down."
-                await self.main_message.edit(content=self.get_game_board(True), view=view)
-                await asyncio.sleep(1)  # Add slight delay
-                await self.doubling_down(interaction, view)
-
-            # Add the doubling down button.
-            doubling_down_button = discord.ui.Button(label="Double Down", style=discord.ButtonStyle.gray)
-            doubling_down_button.callback = doubling_down_callback
-            view.add_item(doubling_down_button)
-
-        # If player have two of the same cards, then it's splittable.
+        # If player have two of the same cards, then it's splittable. Can only split 4 times max.
         if (
             len(self.player_hands[self.active_player_hand_idx]) == 2
             and self.player_hands[self.active_player_hand_idx][0].value
             == self.player_hands[self.active_player_hand_idx][1].value
+            and len(self.player_hands) < 5
         ):
 
             async def split_callback(interaction: discord.Interaction) -> None:
@@ -860,6 +847,68 @@ class QuackjackGame:
             split_button.callback = split_callback
             view.add_item(split_button)
 
+        # Can double down when you have two cards in hand, even after split
+        if len(self.player_hands[self.active_player_hand_idx]) == 2:
+
+            async def doubling_down_callback(interaction: discord.Interaction) -> None:
+                """
+                Callback function for the discord.ui.Button view when the player choose to double down.
+
+                :param interaction: The discord.py interaction.
+                """
+                for button in view.children:
+                    # Don't disable Double Down button in case user pressed "cancel".
+                    if isinstance(button, discord.ui.Button) and button.label != "Double Down":
+                        button.disabled = True
+
+                self.last_action_text = "You choose to double down."
+                await self.main_message.edit(content=self.get_game_board(True), view=view)
+                await asyncio.sleep(1)  # Add slight delay
+                await self.doubling_down(interaction, view)
+
+            # Add the doubling down button.
+            doubling_down_button = discord.ui.Button(label="Double Down", style=discord.ButtonStyle.gray)
+            doubling_down_button.callback = doubling_down_callback
+            view.add_item(doubling_down_button)
+
+        if self.is_first_action:
+            # You're only allowed to double down or surrender at the start of the game.
+
+            async def surrender_callback(interaction: discord.Interaction) -> None:
+                """
+                Callback function for the discord.ui.Button view when the player choose to surrender.
+
+                :param interaction: The discord.py interaction.
+                """
+                for button in view.children:
+                    if isinstance(button, discord.ui.Button):
+                        button.disabled = True
+
+                # noinspection PyUnresolvedReferences
+                await interaction.response.defer()
+
+                self.is_first_action = False
+
+                self.last_action_text = "You choose to surrender."
+                await self.main_message.edit(content=self.get_game_board(True), view=view)
+                await asyncio.sleep(1)  # Add slight delay
+                self.active_player_hand_idx = 1  # Increment the active player hand since the game is over
+
+                self.modify_quackerinos(self.player_hands[0].bet // 2)  # Refund half of the initial bet
+
+                final_message = "You surrendered the game!"
+                # The net loss when surrendering is 50% of bet.
+                ending_message = self.get_ending_message(
+                    -(self.player_hands[0].bet - self.player_hands[0].bet // 2), final_message
+                )
+                await self.main_message.edit(content=ending_message)
+                await self.end_round()
+
+            # Add the surrender button.
+            surrender_button = discord.ui.Button(label="Surrender", style=discord.ButtonStyle.gray)
+            surrender_button.callback = surrender_callback
+            view.add_item(surrender_button)
+
         await self.main_message.edit(content=self.get_game_board(True) + "\nWhat do you want to do?", view=view)
 
     async def hit(self, interaction: discord.Interaction) -> None:
@@ -871,7 +920,7 @@ class QuackjackGame:
         # noinspection PyUnresolvedReferences
         await interaction.response.defer()
 
-        self.can_double_down = False  # Can no longer double down after the first action
+        self.is_first_action = False
 
         card = self.player_hands[self.active_player_hand_idx].draw_card()
 
@@ -880,13 +929,10 @@ class QuackjackGame:
         await self.main_message.edit(content=self.get_game_board(True))
         await asyncio.sleep(1)
 
-        if self.player_hands[self.active_player_hand_idx].is_busted:  # Player busted
+        if self.player_hands[self.active_player_hand_idx].is_busted:  # Player busted, next hand
             self.active_player_hand_idx += 1
-            if self.active_player_hand_idx >= len(self.player_hands):
-                # End of the game, process dealer's turn.
-                await self.dealer_turn()
-                return
 
+        # Ask for next action.
         await self.ask_for_user_action()
 
     async def stay(self, interaction: discord.Interaction) -> None:
@@ -898,16 +944,61 @@ class QuackjackGame:
         # noinspection PyUnresolvedReferences
         await interaction.response.defer()
 
-        self.can_double_down = False  # Can no longer double down after the first action
+        self.is_first_action = False
 
         self.active_player_hand_idx += 1  # Stay moves the active hand to the next hand
 
-        if self.active_player_hand_idx >= len(self.player_hands):
+        # Ask for next action.
+        await self.ask_for_user_action()
+
+    async def split(self, interaction: discord.Interaction) -> None:
+        """
+        When the player choose to split.
+
+        :param interaction: The discord.py interaction.
+        """
+
+        user_balance = self.modify_quackerinos(0)  # Get the balance using 0 change
+        bet = self.player_hands[self.active_player_hand_idx].bet
+
+        # Check if user can afford the bet.
+        if bet > user_balance:
+            # noinspection PyUnresolvedReferences
+            await interaction.response.send_message(
+                "You don't have enough quackerinos to split.",
+                ephemeral=True,
+                delete_after=5,
+            )
+            await self.ask_for_user_action()
+            return
+
+        # noinspection PyUnresolvedReferences
+        await interaction.response.defer()
+
+        self.is_first_action = False
+
+        # Update bets.
+        self.modify_quackerinos(-bet)
+
+        self.player_hands.insert(
+            self.active_player_hand_idx + 1, self.player_hands[self.active_player_hand_idx].split()
+        )
+
+        card1 = self.player_hands[self.active_player_hand_idx].draw_card()
+        card2 = self.player_hands[self.active_player_hand_idx + 1].draw_card()
+
+        # Show the card to the player.
+        self.last_action_text = f"You drew `{card1}` and `{card2}`."
+        await self.main_message.edit(content=self.get_game_board(True))
+        await asyncio.sleep(1)
+
+        # Splitting aces cannot draw anymore, they cannot be re-split either when paired with another ace
+        if self.player_hands[self.active_player_hand_idx][0].rank == "A":
+            self.active_player_hand_idx += 1
             # End of the game, process dealer's turn.
             await self.dealer_turn()
             return
 
-        # There's still more hands to play, ask for next action.
         await self.ask_for_user_action()
 
     async def doubling_down(self, interaction: discord.Interaction, view: discord.ui.View) -> None:
@@ -924,11 +1015,11 @@ class QuackjackGame:
             """
 
             bet = discord.ui.TextInput(
-                label=f"Bet (Up to {self.player_hands[0].bet})",
-                placeholder="How much do you want to bet?",
+                label=f"Additional Bet (Up to {self.player_hands[self.active_player_hand_idx].bet})",
+                placeholder="How much do you want to add to the bet?",
                 min_length=len(str(MIN_BET)),
-                max_length=len(str(self.player_hands[0].bet)),
-                default=str(self.player_hands[0].bet),
+                max_length=len(str(self.player_hands[self.active_player_hand_idx].bet)),
+                default=str(self.player_hands[self.active_player_hand_idx].bet),
             )
 
             # noinspection PyMethodParameters
@@ -966,10 +1057,11 @@ class QuackjackGame:
                 bet = int(self_.bet.value)
 
                 # If the bet is out of bounds.
-                if bet > self.player_hands[0].bet or bet < MIN_BET:
+                if bet > self.player_hands[self.active_player_hand_idx].bet or bet < MIN_BET:
                     # noinspection PyUnresolvedReferences
                     await interaction.response.send_message(
-                        f"Double down bets must be between {MIN_BET} and {self.player_hands[0].bet}.",
+                        f"Double down bets must be between {MIN_BET} and "
+                        f"{self.player_hands[self.active_player_hand_idx].bet}.",
                         ephemeral=True,
                         delete_after=5,
                     )
@@ -989,26 +1081,26 @@ class QuackjackGame:
                     await self.ask_for_user_action()
                     return
 
-                self.can_double_down = False  # Can no longer double down after the first action
+                self.is_first_action = False
 
                 # noinspection PyUnresolvedReferences
                 await interaction.response.defer()
 
                 # Update bets.
                 self.modify_quackerinos(-bet)
-                self.player_hands[0].bet += bet
+                self.player_hands[self.active_player_hand_idx].bet += bet
 
                 # Draw card.
-                card = self.player_hands[0].draw_card()
+                card = self.player_hands[self.active_player_hand_idx].draw_card()
 
                 # Show the card to the player.
                 self.last_action_text = f"You drew `{card}`."
                 await self.main_message.edit(content=self.get_game_board(True))
-                await asyncio.sleep(2)
+                await asyncio.sleep(1.5)
 
-                # Finish the game.
-                self.active_player_hand_idx += 1  # Stay moves the active hand to the next hand
-                await self.dealer_turn()
+                # Continue to the next hand.
+                self.active_player_hand_idx += 1
+                await self.ask_for_user_action()
 
             # noinspection PyShadowingNames,PyMethodParameters
             async def on_error(self_, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -1030,55 +1122,6 @@ class QuackjackGame:
 
         # noinspection PyUnresolvedReferences
         await interaction.response.send_modal(DoublingDownModal())
-
-    async def split(self, interaction: discord.Interaction) -> None:
-        """
-        When the player choose to split.
-
-        :param interaction: The discord.py interaction.
-        """
-
-        user_balance = self.modify_quackerinos(0)  # Get the balance using 0 change
-        bet = self.player_hands[self.active_player_hand_idx].bet
-
-        # Check if user can afford the bet.
-        if bet > user_balance:
-            # noinspection PyUnresolvedReferences
-            await interaction.response.send_message(
-                "You don't have enough quackerinos to split.",
-                ephemeral=True,
-                delete_after=5,
-            )
-            await self.ask_for_user_action()
-            return
-
-        # noinspection PyUnresolvedReferences
-        await interaction.response.defer()
-
-        self.can_double_down = False  # Can no longer double down after the first action
-
-        # Update bets.
-        self.modify_quackerinos(-bet)
-
-        self.player_hands.insert(
-            self.active_player_hand_idx + 1, self.player_hands[self.active_player_hand_idx].split()
-        )
-
-        card1 = self.player_hands[self.active_player_hand_idx].draw_card()
-        card2 = self.player_hands[self.active_player_hand_idx + 1].draw_card()
-
-        # Show the card to the player.
-        self.last_action_text = f"You drew `{card1}` and `{card2}`."
-        await self.main_message.edit(content=self.get_game_board(True))
-        await asyncio.sleep(1)
-
-        if self.player_hands[self.active_player_hand_idx][0].rank == "A":  # Splitting aces cannot draw anymore
-            self.active_player_hand_idx += 1
-            # End of the game, process dealer's turn.
-            await self.dealer_turn()
-            return
-
-        await self.ask_for_user_action()
 
     @staticmethod
     def _format_hand_indexes(indexes: list[tuple[int, Hand]]) -> str:
@@ -1136,14 +1179,16 @@ class QuackjackGame:
             await self.end_round()
             return
 
+        self.last_action_text = f"The dealer's hidden card is `{self.dealer_hand[1]}`."
         await self.main_message.edit(content=self.get_game_board(False), view=None)
+        await asyncio.sleep(1)
 
         # Dealer draws card when total value is < 17, and stops when it's >= 17 or busted.
         while self.dealer_hand.value < 17 and not self.dealer_hand.is_busted:
             card = self.dealer_hand.draw_card()
-            await asyncio.sleep(1)
             self.last_action_text = f"The dealer drew a `{card}`."
             await self.main_message.edit(content=self.get_game_board(False))
+            await asyncio.sleep(1)
 
         if self.dealer_hand.is_busted:  # Dealer busted
             if len(self.player_hands) == 1:  # Player has only one hand, and it's not busted, they win
@@ -1260,7 +1305,8 @@ class QuackjackGame:
                 f"You tied with {self._format_plural('hand', tie_hand_indexes)} "
                 f"{self._format_hand_indexes(tie_hand_indexes)}."
             )
-        final_message = self.get_ending_message(earnings, ending_message)
+        total_bet = sum(hand.bet for hand in self.player_hands)
+        final_message = self.get_ending_message((quackerinos_return + earnings) - total_bet, ending_message)
         await self.main_message.edit(content=final_message)
         await self.end_round()
 
