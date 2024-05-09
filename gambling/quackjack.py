@@ -619,7 +619,7 @@ class QuackjackGame:
                     else:
                         _extra_info = "Push"
                 else:
-                    _extra_info = "Stay"
+                    _extra_info = "Stand"
 
             return f" [2;30m({_extra_info})[0m"
 
@@ -653,7 +653,7 @@ class QuackjackGame:
         formatted_text += f"{dealer_hand_text}  {dealer_cards_text}\n"
 
         if len(self.player_hands) == 1:
-            if self.active_player_hand_idx == 1:  # The player chose to stay or has busted
+            if self.active_player_hand_idx == 1:  # The player chose to stand or has busted
                 extra_info: str = get_extra_info(self.player_hands[0])
             else:
                 extra_info = ""
@@ -1046,9 +1046,9 @@ class QuackjackGame:
         hit_button.callback = hit_callback
         view.add_item(hit_button)
 
-        async def stay_callback(interaction: discord.Interaction) -> None:
+        async def stand_callback(interaction: discord.Interaction) -> None:
             """
-            Callback function for the discord.ui.Button view when the player choose to stay.
+            Callback function for the discord.ui.Button view when the player choose to stand.
 
             :param interaction: The discord.py interaction.
             """
@@ -1058,18 +1058,18 @@ class QuackjackGame:
                     button.disabled = True
 
             if len(self.player_hands) == 1:
-                self.last_action_text = "You choose to stay."
+                self.last_action_text = "You choose to stand."
             else:
-                self.last_action_text = f"You choose to stay hand #{self.active_player_hand_idx + 1}."
+                self.last_action_text = f"You choose to stand hand #{self.active_player_hand_idx + 1}."
 
             await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
             await asyncio.sleep(1)  # Add slight delay
-            await self.stay(interaction)
+            await self.stand(interaction)
 
-        # Add the stay button.
-        stay_button = discord.ui.Button(label="Stay", style=discord.ButtonStyle.red)
-        stay_button.callback = stay_callback
-        view.add_item(stay_button)
+        # Add the stand button.
+        stand_button = discord.ui.Button(label="Stand", style=discord.ButtonStyle.red)
+        stand_button.callback = stand_callback
+        view.add_item(stand_button)
 
         # If player have two of the same cards, then it's splittable. Can only split 4 times max.
         if (
@@ -1193,9 +1193,9 @@ class QuackjackGame:
         # Ask for next action.
         await self.ask_for_user_action()
 
-    async def stay(self, interaction: discord.Interaction) -> None:
+    async def stand(self, interaction: discord.Interaction) -> None:
         """
-        When the player choose to stay.
+        When the player choose to stand.
 
         :param interaction: The discord.py interaction.
         """
@@ -1204,7 +1204,7 @@ class QuackjackGame:
 
         self.is_first_action = False
 
-        self.active_player_hand_idx += 1  # Stay moves the active hand to the next hand
+        self.active_player_hand_idx += 1  # Stand moves the active hand to the next hand
 
         # Ask for next action.
         await self.ask_for_user_action()
