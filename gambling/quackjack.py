@@ -78,10 +78,36 @@ class Shoe:
         """
         self._num_decks: int = num_decks
         self.cards_dealt: int = 0
-        total_cards: int = num_decks * len(self._CARD_DECK)
-        self.penetration_card: int = int(total_cards * penetration)
+        self.penetration_card: int = int(self.total_cards * penetration)
         self.deck: collections.deque[Card] = collections.deque()
         self.reset()  # Populates the deck
+
+    @property
+    def total_cards(self) -> int:
+        """
+        Retrieve the total number of cards from the card decks.
+
+        :return: The number of cards.
+        """
+        return self._num_decks * len(self._CARD_DECK)
+
+    @property
+    def remaining_cards(self) -> int:
+        """
+        Find how many cards are still in the shoe.
+
+        :return: The number of cards in the shoe.
+        """
+        return max(self.total_cards - self.cards_dealt, 0)  # Cannot be below 0
+
+    @property
+    def remaining_playable_cards(self) -> int:
+        """
+        Find how many cards are still in the shoe before the penetration.
+
+        :return: The number of playable cards in the shoe.
+        """
+        return max(self.penetration_card - self.cards_dealt, 0)  # Cannot be below 0
 
     def reset(self) -> None:
         """
@@ -338,7 +364,9 @@ class PlayAgainBetModal(discord.ui.Modal, title="Quackjack"):
         else:  # If this command is invoked in DM, use the user ID instead.
             guild_id = interaction.user.id
 
-        game = QuackjackGame.get_game(user_id=interaction.user.id, guild_id=guild_id)
+        game = QuackjackGame.get_game(
+            user_id=interaction.user.id, user_name=interaction.user.display_name, guild_id=guild_id
+        )
         if game._state != GameState.pre_game:  # Check if the game is in the idle state (pre-game)
             # noinspection PyUnresolvedReferences
             await interaction.response.send_message(
@@ -482,14 +510,16 @@ class QuackjackGame:
         "Want to keep playing?",
     )
 
-    def __init__(self, *, user_id: int, guild_id: int):
+    def __init__(self, *, user_id: int, user_name: str, guild_id: int):
         """
         Create a new multi-round Quackjack game, will override existing games.
 
         :param user_id: The ID of the user.
+        :param user_name: The user's display name.
         :param guild_id: The ID of the guild, or the user ID if not in guild.
         """
         self.user_id = user_id
+        self.user_name = user_name
         self.guild_id = guild_id
         self.expires_at: float = 0
         self._on_going_games[(user_id, guild_id)] = self
@@ -505,22 +535,23 @@ class QuackjackGame:
         self.refresh_expiry()  # Sets the initial expiry time
 
     @classmethod
-    def get_game(cls, *, user_id: int, guild_id: int) -> QuackjackGame:
+    def get_game(cls, *, user_id: int, user_name: str, guild_id: int) -> QuackjackGame:
         """
         Get or create a Quackjack game for the user of the guild.
 
         :param user_id: The ID of the user.
+        :param user_name: The user's display name.
         :param guild_id: The ID of the guild.
         :return: The current / new Quackjack game for the user.
         """
         game = cls._on_going_games.get((user_id, guild_id))
         if game is None:
             # If there's no current ongoing game for this user in this guild, start a new game.
-            return QuackjackGame(user_id=user_id, guild_id=guild_id)
+            return QuackjackGame(user_id=user_id, user_name=user_name, guild_id=guild_id)
         if game.expires_at < utcnow().timestamp():
             game.terminate()
             # If the game has already expired, end the current game and start a new game.
-            return QuackjackGame(user_id=user_id, guild_id=guild_id)
+            return QuackjackGame(user_id=user_id, user_name=user_name, guild_id=guild_id)
         return game
 
     @property
@@ -568,15 +599,8 @@ class QuackjackGame:
         :param show_hand_conclusion: Should win/lose/tie for the player hand be shown.
         :return: The formatted game board text.
         """
-        if dealer_hidden:  # Dealer has only two cards, second is hidden
-            dealer_cards_text = f"{self.dealer_hand[0]}  ?"
-        else:
-            dealer_cards_text = str(self.dealer_hand)
-            if show_hand_conclusion and self.dealer_hand.is_busted:
-                dealer_cards_text += " [2;30m(Busted)[0m"
 
         dealer_value = self.dealer_hand.value
-        extra_dealer_padding: int = 0  # Extra space padding for the dealer's text
 
         def get_extra_info(hand: Hand) -> str:
             """
@@ -593,51 +617,68 @@ class QuackjackGame:
                     elif _value < dealer_value:
                         _extra_info = "Lose"
                     else:
-                        _extra_info = "Tie"
+                        _extra_info = "Push"
                 else:
                     _extra_info = "Stay"
 
             return f" [2;30m({_extra_info})[0m"
+
+        # Find the max length of the "[X qq] Your hand:" / "Dealer's hand:" text.
+        if len(self.player_hands) == 1:
+            max_player_padding_length = len(f"[{self.player_hands[0].bet} qq] Your hand:")
+        else:
+            max_player_padding_length = max(
+                len(f"[{hand.bet} qq] Your hand #{hand_num}:")
+                for hand_num, hand in enumerate(self.player_hands, start=1)
+            )
+        left_padding_width = max([len("Dealer's hand:"), max_player_padding_length])
+
+        formatted_text = f"Playing Quackjack with <@{self.user_id}>\n"
+        formatted_text += "```ansi\n"
+        formatted_text += (
+            f"[1;2m[1;35mRemaining cards in shoe: {self.shoe.remaining_cards} "
+            f"({self.shoe.remaining_playable_cards} playable)[0m\n"
+        )
+
+        if dealer_hidden:  # Dealer has only two cards, second is hidden
+            dealer_cards_text = f"{self.dealer_hand[0]}  ?"
+        else:
+            dealer_cards_text = str(self.dealer_hand)
+            if show_hand_conclusion and self.dealer_hand.is_busted:
+                dealer_cards_text += " [2;30m(Busted)[0m"
+
+        dealer_hand_text = "[1;2m[1;32mDealer's hand:[0m".rjust(
+            left_padding_width + 17, " "  # 17 is the offset for the number of ansi escape characters
+        )
+        formatted_text += f"{dealer_hand_text}  {dealer_cards_text}\n"
 
         if len(self.player_hands) == 1:
             if self.active_player_hand_idx == 1:  # The player chose to stay or has busted
                 extra_info: str = get_extra_info(self.player_hands[0])
             else:
                 extra_info = ""
-            player_cards_text = str(self.player_hands[0]) + extra_info
+            your_hand_text = f"[2;33m[{self.player_hands[0].bet} qq][0m [1;2m[1;34mYour hand:[0m".rjust(
+                left_padding_width + 28, " "  # 28 is the offset for the number of ansi escape characters
+            )
+            formatted_text += f"{your_hand_text}  {self.player_hands[0]}{extra_info}\n"
         else:
-            # Format into "[Hand #1] C1 C2 (Stayed), [Hand #2] C3 C4 C5, ..."
-            player_cards_texts = []
             for hand_idx, player_hand in enumerate(self.player_hands):
                 if hand_idx < self.active_player_hand_idx:  # Already actioned on
                     extra_info = get_extra_info(player_hand)
                 elif hand_idx == self.active_player_hand_idx:
-                    extra_info = f" [2;36m(Current)[0m"
+                    extra_info = " [2;36m(Current)[0m"
                 else:
                     extra_info = ""
-                extra_dealer_padding = len(f"[Hand #{hand_idx + 1}] ")
-                player_cards_texts += [f"[2;33m[Hand #{hand_idx + 1}][0m {player_hand}{extra_info}"]
+                your_hand_text = f"[2;33m[{player_hand.bet} qq][0m [1;2m[1;34mYour hand #{hand_idx + 1}:[0m".rjust(
+                    left_padding_width + 28, " "  # 28 is the offset for the number of ansi escape characters
+                )
+                formatted_text += f"{your_hand_text}  {player_hand}{extra_info}\n"
 
-            player_cards_text = ", ".join(player_cards_texts)  # Join multiple hands with ","
-
-        # Calculate the total bet, and format it.
-        total_bet = self.total_bet
-        total_bet_calculation = (
-            f" ({'+'.join(map(str, (hand.bet for hand in self.player_hands)))})" if len(self.player_hands) > 1 else ""
-        )
-        total_bet_text = f"{total_bet} {self._format_plural('quackerino', total_bet)}{total_bet_calculation}"
-        return (
-            dedent(
-                f"""
-                    Playing Quackjack with <@{self.user_id}> 
-                    ```ansi
-                    [1;2m[1;35mTotal Bet: {total_bet_text}[0m
-                    [1;2m[1;32mDealer's cards:[0m  {" " * extra_dealer_padding}{dealer_cards_text}
-                    [1;2m[1;34m    Your cards:[0m  {player_cards_text}```
-            """
-            ).rstrip()
-            + (f"\n{self.last_action_text}" if self.last_action_text is not None else "")
-        )
+        formatted_text = formatted_text.rstrip()  # Remove the last \n to add ```
+        formatted_text += "```"
+        if self.last_action_text is not None:
+            formatted_text += f"\n{self.last_action_text}"
+        return formatted_text
 
     def get_ending_message(self, amount_diff: int, msg: str, *, insurance_succeeded: bool = False) -> str:
         """
@@ -669,6 +710,16 @@ class QuackjackGame:
             + f"\n{extra_newline}{msg} {random_ending_phrase} ({'+' if amount_diff >= 0 else ''}{amount_diff} qq)\n"
             f"You now have {balance} {self._format_plural('quackerino', balance)}."
         )
+
+    def embed_maker(
+        self, message: str, *, title: str | None = None, colour: discord.Colour = discord.Colour.orange()
+    ) -> discord.Embed:
+        embed = discord.Embed(description=message, colour=colour)
+        if title is not None:
+            embed.title = title
+        else:
+            embed.title = f"Quackjack with {self.user_name} 🐤"
+        return embed
 
     async def start_round(self, ctx: commands.Context | discord.Interaction, initial_bet: int) -> None:
         """
@@ -708,13 +759,13 @@ class QuackjackGame:
         if isinstance(ctx, discord.Interaction):
             # noinspection PyUnresolvedReferences
             if ctx.response.is_done():
-                self.main_message = await ctx.followup.send(game_board, wait=True)
+                self.main_message = await ctx.followup.send(embed=self.embed_maker(game_board), wait=True)
             else:
                 # noinspection PyUnresolvedReferences
-                await ctx.response.send_message(content=game_board)
+                await ctx.response.send_message(embed=self.embed_maker(game_board))
                 self.main_message = await ctx.original_response()
         else:
-            self.main_message = await ctx.reply(game_board)
+            self.main_message = await ctx.reply(embed=self.embed_maker(game_board))
 
         # You're only allowed to take insurance first thing in the game.
         if self.dealer_hand[0].rank == "A":
@@ -735,7 +786,7 @@ class QuackjackGame:
             :param interaction: The discord.py interaction.
             """
             self.last_action_text = "You choose to take insurance."
-            await self.main_message.edit(content=self.get_game_board(True), view=view)
+            await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
             await self.take_insurance(interaction, view)
 
         # Add the take insurance button.
@@ -757,7 +808,9 @@ class QuackjackGame:
         dont_take_insurance_button.callback = dont_take_insurance_callback
         view.add_item(dont_take_insurance_button)
 
-        await self.main_message.edit(content=self.get_game_board(True) + "\nDo you wish to take insurance?", view=view)
+        await self.main_message.edit(
+            embed=self.embed_maker(self.get_game_board(True) + "\nDo you wish to take insurance?"), view=view
+        )
 
     async def take_insurance(self, interaction: discord.Interaction, view: discord.ui.View) -> None:
         """
@@ -895,7 +948,7 @@ class QuackjackGame:
                 final_message += f" You received {self.insurance_bet} qq from insurance."
 
             ending_message: str = self.get_ending_message(0, final_message, insurance_succeeded=True)
-            await self.main_message.edit(content=ending_message)
+            await self.main_message.edit(embed=self.embed_maker(ending_message))
             await self.end_round()
             return
 
@@ -912,7 +965,7 @@ class QuackjackGame:
                 )
 
             ending_message = self.get_ending_message(earnings, final_message, insurance_succeeded=False)
-            await self.main_message.edit(content=ending_message)
+            await self.main_message.edit(embed=self.embed_maker(ending_message))
             await self.end_round()
             return
 
@@ -925,7 +978,7 @@ class QuackjackGame:
                 self.modify_quackerinos(self.insurance_bet)
 
             ending_message = self.get_ending_message(-self.player_hands[0].bet, final_message, insurance_succeeded=True)
-            await self.main_message.edit(content=ending_message)
+            await self.main_message.edit(embed=self.embed_maker(ending_message))
             await self.end_round()
             return
 
@@ -984,7 +1037,7 @@ class QuackjackGame:
             else:
                 self.last_action_text = f"You choose to hit hand #{self.active_player_hand_idx + 1}."
 
-            await self.main_message.edit(content=self.get_game_board(True), view=view)
+            await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
             await asyncio.sleep(1)  # Add slight delay
             await self.hit(interaction)
 
@@ -1009,7 +1062,7 @@ class QuackjackGame:
             else:
                 self.last_action_text = f"You choose to stay hand #{self.active_player_hand_idx + 1}."
 
-            await self.main_message.edit(content=self.get_game_board(True), view=view)
+            await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
             await asyncio.sleep(1)  # Add slight delay
             await self.stay(interaction)
 
@@ -1042,7 +1095,7 @@ class QuackjackGame:
                 else:
                     self.last_action_text = f"You choose to split hand #{self.active_player_hand_idx + 1}."
 
-                await self.main_message.edit(content=self.get_game_board(True), view=view)
+                await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
                 await asyncio.sleep(1)  # Add slight delay
                 await self.split(interaction)
 
@@ -1066,7 +1119,7 @@ class QuackjackGame:
                         button.disabled = True
 
                 self.last_action_text = "You choose to double down."
-                await self.main_message.edit(content=self.get_game_board(True), view=view)
+                await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
                 await self.doubling_down(interaction, view)
 
             # Add the doubling down button.
@@ -1093,7 +1146,7 @@ class QuackjackGame:
                 self.is_first_action = False
 
                 self.last_action_text = "You choose to surrender."
-                await self.main_message.edit(content=self.get_game_board(True), view=view)
+                await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)), view=view)
                 await asyncio.sleep(1)  # Add slight delay
                 self.active_player_hand_idx = 1  # Increment the active player hand since the game is over
 
@@ -1104,7 +1157,7 @@ class QuackjackGame:
                 ending_message = self.get_ending_message(
                     -(self.player_hands[0].bet - self.player_hands[0].bet // 2), final_message
                 )
-                await self.main_message.edit(content=ending_message)
+                await self.main_message.edit(embed=self.embed_maker(ending_message))
                 await self.end_round()
 
             # Add the surrender button.
@@ -1112,7 +1165,9 @@ class QuackjackGame:
             surrender_button.callback = surrender_callback
             view.add_item(surrender_button)
 
-        await self.main_message.edit(content=self.get_game_board(True) + "\nWhat do you want to do?", view=view)
+        await self.main_message.edit(
+            embed=self.embed_maker(self.get_game_board(True) + "\nWhat do you want to do?"), view=view
+        )
 
     async def hit(self, interaction: discord.Interaction) -> None:
         """
@@ -1129,7 +1184,7 @@ class QuackjackGame:
 
         # Show the card to the player.
         self.last_action_text = f"You drew `{card}`."
-        await self.main_message.edit(content=self.get_game_board(True))
+        await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)))
         await asyncio.sleep(1)
 
         if self.player_hands[self.active_player_hand_idx].is_busted:  # Player busted, next hand
@@ -1192,7 +1247,7 @@ class QuackjackGame:
 
         # Show the card to the player.
         self.last_action_text = f"You drew `{card1}` and `{card2}`."
-        await self.main_message.edit(content=self.get_game_board(True))
+        await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)))
         await asyncio.sleep(1)
 
         # Splitting aces cannot draw anymore, they cannot be re-split either when paired with another ace
@@ -1298,7 +1353,7 @@ class QuackjackGame:
 
                 # Show the card to the player.
                 self.last_action_text = f"You drew `{card}`."
-                await self.main_message.edit(content=self.get_game_board(True))
+                await self.main_message.edit(embed=self.embed_maker(self.get_game_board(True)))
                 await asyncio.sleep(1.5)
 
                 # Continue to the next hand.
@@ -1378,19 +1433,19 @@ class QuackjackGame:
                 ending_message = "All your hands busted."
 
             final_message: str = self.get_ending_message(-self.total_bet, ending_message)
-            await self.main_message.edit(content=final_message)
+            await self.main_message.edit(embed=self.embed_maker(final_message))
             await self.end_round()
             return
 
         self.last_action_text = f"The dealer's hidden card is `{self.dealer_hand[1]}`."
-        await self.main_message.edit(content=self.get_game_board(False), view=None)
+        await self.main_message.edit(embed=self.embed_maker(self.get_game_board(False)), view=None)
         await asyncio.sleep(1)
 
         # Dealer draws card when total value is < 17, and stops when it's >= 17 or busted.
         while self.dealer_hand.value < 17 and not self.dealer_hand.is_busted:
             card = self.dealer_hand.draw_card()
             self.last_action_text = f"The dealer drew a `{card}`."
-            await self.main_message.edit(content=self.get_game_board(False))
+            await self.main_message.edit(embed=self.embed_maker(self.get_game_board(False)))
             await asyncio.sleep(1)
 
         if self.dealer_hand.is_busted:  # Dealer busted
@@ -1427,7 +1482,7 @@ class QuackjackGame:
                     )
 
             final_message = self.get_ending_message(quackerinos_return + earnings - self.total_bet, ending_message)
-            await self.main_message.edit(content=final_message)
+            await self.main_message.edit(embed=self.embed_maker(final_message))
             await self.end_round()
             return
 
@@ -1446,7 +1501,7 @@ class QuackjackGame:
             else:
                 ending_message = f"All your hands beat the dealer's {self.dealer_hand.value}."
             final_message = self.get_ending_message(earnings, ending_message)
-            await self.main_message.edit(content=final_message)
+            await self.main_message.edit(embed=self.embed_maker(final_message))
             await self.end_round()
             return
 
@@ -1460,7 +1515,7 @@ class QuackjackGame:
                 ending_message = f"All your hands loses to the dealer's {self.dealer_hand.value}."
 
             final_message = self.get_ending_message(-self.total_bet, ending_message)
-            await self.main_message.edit(content=final_message)
+            await self.main_message.edit(embed=self.embed_maker(final_message))
             await self.end_round()
             return
 
@@ -1470,7 +1525,7 @@ class QuackjackGame:
             self.modify_quackerinos(quackerinos_return)
             ending_message = f"You and the dealer both got {self.dealer_hand.value}."
             final_message = self.get_ending_message(0, ending_message)
-            await self.main_message.edit(content=final_message)
+            await self.main_message.edit(embed=self.embed_maker(final_message))
             await self.end_round()
             return
 
@@ -1506,11 +1561,11 @@ class QuackjackGame:
             )
         if tie_hand_indexes:
             ending_message += (
-                f"You tied with {self._format_plural('hand', tie_hand_indexes)} "
+                f"You pushed with {self._format_plural('hand', tie_hand_indexes)} "
                 f"{self._format_hand_indexes(tie_hand_indexes)}."
             )
         final_message = self.get_ending_message((quackerinos_return + earnings) - self.total_bet, ending_message)
-        await self.main_message.edit(content=final_message)
+        await self.main_message.edit(embed=self.embed_maker(final_message))
         await self.end_round()
 
 
@@ -1537,16 +1592,17 @@ class QuackjackTutorial(discord.ui.View):
         if page == 1:
             return dedent(
                 """
-                # Beginner's Guide to Blackjack (Page 1 of 2)
+                # Beginner's Guide to Quackjack (Page 1 of 2)
     
                 ## Objective
-                The objective of blackjack is to beat the dealer's hand without going over 21.
+                The objective of Quackjack is to beat the dealer's hand without going over 21.
     
                 ## Card Values
-                - Number cards (2-10) are worth their face value.
-                - Face cards (Jack, Queen, King) are worth 10.
-                - Aces can be worth 1 or 11, whichever is more advantageous you.
-    
+                    - Number cards (2-10) are worth their face value.
+                    - Face cards (Jack, Queen, King) are worth 10.
+                    - Aces can be worth 1 or 11, whichever is more advantageous you.
+                    - Quackjack is played using 6 standard playing card decks with 75% penetration (use only the first 75% of the 6 decks), so it's normal to receive duplicate cards.
+
                 ## Gameplay
                 1. **Initial Deal**: You place your bet, then the dealer deals two cards to you and themselves. One of the dealer's cards is face-up and the other one is face-down.
     
@@ -1565,7 +1621,7 @@ class QuackjackTutorial(discord.ui.View):
 
         return dedent(
             """
-            # Beginner's Guide to Blackjack (Page 2 of 2)
+            # Beginner's Guide to Quackjack (Page 2 of 2)
             
             ## Special Actions
             
@@ -1581,8 +1637,8 @@ class QuackjackTutorial(discord.ui.View):
             
             ### Insurance
             - If the dealer's face-up card is an Ace, you can choose to make an insurance bet.
-            - The insurance bet is a separate side bet, up to half of the original bet, and pays 2:1 if the dealer has a natural blackjack.
-            - If the dealer does not have a natural blackjack, the insurance bet is lost.
+            - The insurance bet is a separate side bet, up to half of the original bet, and pays 2:1 if the dealer has a natural quackjack.
+            - If the dealer does not have a natural quackjack, the insurance bet is lost.
             
             ### Surrender
             - You are allowed to surrender your hand after the initial deal.
@@ -1602,6 +1658,7 @@ class QuackjackTutorial(discord.ui.View):
         """
         self.message = message
 
+    # noinspection PyUnusedLocal
     @discord.ui.button(label="Back", style=discord.ButtonStyle.blurple, disabled=True)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """
@@ -1616,6 +1673,7 @@ class QuackjackTutorial(discord.ui.View):
         await interaction.response.defer()
         await self.message.edit(content=self.get_page(1), view=self)
 
+    # noinspection PyUnusedLocal
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """
@@ -1703,7 +1761,7 @@ class Quackjack(commands.Cog):
         else:  # If this command is invoked in DM, use the user ID instead.
             guild_id = ctx.author.id
 
-        game = QuackjackGame.get_game(user_id=ctx.author.id, guild_id=guild_id)
+        game = QuackjackGame.get_game(user_id=ctx.author.id, user_name=ctx.author.display_name, guild_id=guild_id)
         if game._state != GameState.pre_game:  # Check if the game is in the idle state (pre-game)
             await ctx.reply("You are currently still in a round. Finish it first!")
             return
